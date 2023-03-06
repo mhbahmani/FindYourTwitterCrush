@@ -1,17 +1,24 @@
 from PIL import Image
+
 import requests
 import random
 import string
+import os
 
-TOTAL_IMAGES = 10
+
+OUTPUT_DIR="merges_images"
+
 NUM_ROWS = 2
-
 IMAGE_BORDER = 300
-PROFILE_IMAGES_DISTANCE = 20
-PROFILE_IMAGES_DISTANCE_X = int(IMAGE_BORDER / (TOTAL_IMAGES / NUM_ROWS))
-PROFILE_IMAGES_DISTANCE_Y = int(IMAGE_BORDER / NUM_ROWS)
 
-def merge_images(data: list):
+
+def merge_images(data: list, avg: float):
+    TOTAL_IMAGES = len(data)
+
+    PROFILE_IMAGES_DISTANCE = 20
+    PROFILE_IMAGES_DISTANCE_X = int(IMAGE_BORDER / (TOTAL_IMAGES / NUM_ROWS))
+    PROFILE_IMAGES_DISTANCE_Y = int(IMAGE_BORDER / NUM_ROWS)
+
     image_urls = [person[2] for person in data]
     key = download_image(image_urls)
     images = []
@@ -32,8 +39,9 @@ def merge_images(data: list):
         merged_image.paste(images[i], images_location[i])
 
     # merged_image.paste(images[i],(images_size[0],0))
-    merged_image.save(f"images/{key}-merged.jpg","JPEG")
+    merged_image.save(f"{OUTPUT_DIR}/{key}-merged.jpg","JPEG")
     # merged_image.show()
+    cleanup_image(key, TOTAL_IMAGES)
 
 def download_image(images: list):
     # generate a random key
@@ -45,3 +53,8 @@ def download_image(images: list):
             f.write(response.content)
         counter += 1
     return key
+
+
+def cleanup_image(key: str, TOTAL_IMAGES: int):
+    for i in range(TOTAL_IMAGES):
+        os.remove(f"images/{key}-{i}.jpg")
