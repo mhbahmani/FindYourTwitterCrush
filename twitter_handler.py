@@ -176,13 +176,6 @@ class Twitter():
         print(liking_users)
         print(list(liking_users.keys()))
 
-import json
 
-if __name__ == "__main__":
-    username = "mh_bahmani"
-    print(username)
-    twitter_client = Twitter()
-    for reply in twitter_client.get_tweet_repliers(1632438742165192704):
-        print("-----", reply)
-    # twitter_client.butify_output(username)
-
+# twitter_client = Twitter()
+# twitter_client.butify_output("mh_bahmani")
