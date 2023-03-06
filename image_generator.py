@@ -6,7 +6,7 @@ import string
 import os
 
 
-OUTPUT_DIR="merges_images"
+OUTPUT_DIR="merged_images"
 
 NUM_ROWS = 2
 IMAGE_BORDER = 300
