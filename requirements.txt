@@ -17,3 +17,5 @@ schedule
 tweepy
 urllib3
 zipp
+langdetect
+pymongo
