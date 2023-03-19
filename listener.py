@@ -36,7 +36,7 @@ def check_for_new_requests_on_most_liking():
         if replier[0] in handled_users_liking or replier[0] in all_progressings: continue
         print("Adding", replier, "to queue liking_users")
         redis_client.add_event_to_queue(replier, queue="liking_users")
-        handled_users_liking.add(replier)
+        handled_users_liking.add(replier[0])
 
 def check_for_new_requests_on_likes():
     all_progressings = redis_client.get_all_progressing_events("liked_users")
@@ -45,11 +45,11 @@ def check_for_new_requests_on_likes():
         if replier[0] in handled_users_liked or replier[0] in all_progressings: continue
         print("Adding", replier, "to queue liked_users")
         redis_client.add_event_to_queue(replier, queue="liked_users")
-        handled_users_liked.add(replier)
+        handled_users_liked.add(replier[0])
 
 
 load_handled_users()
 while True:
     check_for_new_requests_on_most_liking()
     check_for_new_requests_on_likes()
-    time.sleep(60)
+    time.sleep(30)
