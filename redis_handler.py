@@ -15,3 +15,12 @@ class Redis:
     def get_event_from_queue(self, queue: str) -> str:
         event = self.client.lpop(queue)
         if event: return event.decode("utf-8")
+    
+    def get_all_progressing_events(self, queue: str) -> list:
+        return list(self.client.lrange(f"{queue}-progressing", 0, -1))
+
+    def get_all_in_liking_queue(self):
+        return list(self.client.lrange("liking_users", 0, -1))
+    
+    def get_all_in_liked_queue(self):
+        return list(self.client.lrange("liked_users", 0, -1))

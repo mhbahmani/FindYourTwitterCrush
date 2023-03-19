@@ -63,9 +63,12 @@ if __name__ == "__main__":
     while True:
         username = redis_client.get_event_from_queue(ACTION)
         if username:
-            if ACTION == "liking_users":
-                most_liking_users(username)
-            elif ACTION == "liked_users":
-                most_liked_users(username)
-            break
+            print("Got", username, "from queue", ACTION)
+            redis_client.add_event_to_queue(username, f"{ACTION}-progressing")
+            if username:
+                if ACTION == "liking_users":
+                    most_liking_users(username)
+                elif ACTION == "liked_users":
+                    most_liked_users(username)
+        # else: print("Noting found in queue", ACTION)
         time.sleep(1)

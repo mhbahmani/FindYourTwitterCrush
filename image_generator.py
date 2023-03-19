@@ -50,16 +50,20 @@ def merge_images(data: list, avg: float = -1):
         merged_image.paste(images[i], images_location[i])
     
     en_font = ImageFont.truetype("baloo.ttf", 40)
-    pr_font = ImageFont.truetype("kamran.TTF", 50)
+    pr_font = ImageFont.truetype("kamran.ttf", 50)
     image_draw = ImageDraw.Draw(merged_image)
     for i in range(len(images)):
         # Write account name and score middle of the image
         text = f"{data[i][1]} - {data[i][0]}%"
         image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(text) / 2 * 22), images_location[i][1] + 430), text, fill=(0,0,0), font=en_font)
         # Write account name in the next line
-        if langdetect.detect(data[i][3]) == "fa" or langdetect.detect(data[i][3]) == "ar":
-            image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(data[i][3]) / 2 * 17), images_location[i][1] + 480), f"{data[i][3]}", fill=(0,0,0), font=pr_font)
-        else:
+        # print(data[i][3])
+        try:
+            if langdetect.detect(data[i][3]) == "fa" or langdetect.detect(data[i][3]) == "ar":
+                image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(data[i][3]) / 2 * 17), images_location[i][1] + 480), f"{data[i][3]}", fill=(0,0,0), font=pr_font)
+            else:
+                image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(data[i][3]) / 2 * 25), images_location[i][1] + 480), f"{data[i][3]}", fill=(0,0,0), font=en_font)
+        except:
             image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(data[i][3]) / 2 * 25), images_location[i][1] + 480), f"{data[i][3]}", fill=(0,0,0), font=en_font)
 
     if avg != -1:
