@@ -2,14 +2,15 @@ from twitter_handler import Twitter
 from redis_handler import Redis
 from image_generator import merge_images
 
+from db import DB
 
 import time
 
 
+db_client = DB()
 twitter_client = Twitter()
 redis_client = Redis()
 
-# TODO: Handle duplicate usernames, in case of restarting the server
 
 def most_liking_users(username: str):
     print("Finding most liking users for", username)
@@ -26,6 +27,11 @@ def most_liking_users(username: str):
     for user, val in l:
         i += 1
         items.append([val, user, twitter_client.get_user_profile_image(user).replace("_normal", ""), names[-i]])
+
+    db_client.add_handled_liking({
+        "username": username,
+        "result": items
+    })
     merge_images(items, likes_avg)
 
 
@@ -43,6 +49,10 @@ def most_liked_users(username: str):
         i += 1
         items.append([val, user, twitter_client.get_user_profile_image(user).replace("_normal", ""), names[-i]])
     
+    db_client.add_handled_liked({
+        "username": username,
+        "result": items
+    })
     merge_images(items)
 
 
