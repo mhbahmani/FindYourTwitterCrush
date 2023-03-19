@@ -16,7 +16,7 @@ IMAGE_BORDER = 300
 IMAGE_X = 426
 IMAGE_Y = 420
 
-def merge_images(data: list, avg: float = -1):
+def merge_images(data: list, avg: float = -1, username: str = None):
     TOTAL_IMAGES = len(data)
 
     PROFILE_IMAGES_DISTANCE = 20
@@ -52,9 +52,10 @@ def merge_images(data: list, avg: float = -1):
     en_font = ImageFont.truetype("baloo.ttf", 40)
     pr_font = ImageFont.truetype("kamran.ttf", 50)
     image_draw = ImageDraw.Draw(merged_image)
+    template_text = "{} - {}%" if avg else "{} - {}"
     for i in range(len(images)):
         # Write account name and score middle of the image
-        text = f"{data[i][1]} - {data[i][0]}%"
+        text = template_text.format(data[i][1], data[i][0])
         image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(text) / 2 * 22), images_location[i][1] + 430), text, fill=(0,0,0), font=en_font)
         # Write account name in the next line
         # print(data[i][3])
@@ -71,7 +72,7 @@ def merge_images(data: list, avg: float = -1):
         # Write average score in the buttom middle of the image
         image_draw.text((X/2 - 100, Y - 100), f"Average: {avg}%", fill=(0,0,0), font=font)
 
-    merged_image.save(f"{OUTPUT_DIR}/{key}-merged.jpg","JPEG")
+    merged_image.save(f"{OUTPUT_DIR}/{username}-{key}-merged.jpg","JPEG")
 
     # merged_image.show()
     cleanup_image(key, TOTAL_IMAGES)

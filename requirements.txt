@@ -20,3 +20,4 @@ zipp
 langdetect
 pymongo
 Pillow
+tweepy

@@ -18,10 +18,10 @@ handled_users_liked = set()
 
 
 def load_handled_users():
-    for user in db_client.get_all_handled_liking():
-        handled_users_liking.add(user["username"])
-    for user in db_client.get_all_handled_liked():
-        handled_users_liked.add(user["username"])
+    for username in db_client.get_all_handled_liking():
+        handled_users_liking.add(username)
+    for username in db_client.get_all_handled_liked():
+        handled_users_liked.add(username)
 
     for user in redis_client.get_all_in_liking_queue():
         handled_users_liking.add(user.decode("utf-8"))

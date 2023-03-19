@@ -16,8 +16,8 @@ def most_liking_users(username: str):
     print("Finding most liking users for", username)
     liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
     names = []
-    for username, likes in liking_users.items():
-        name = twitter_client.get_user_name_by_username(username)
+    for _username, likes in liking_users.items():
+        name = twitter_client.get_user_name_by_username(_username)
         names.append(name)
     
     res = liking_users
@@ -32,14 +32,14 @@ def most_liking_users(username: str):
         "username": username,
         "result": items
     })
-    merge_images(items, likes_avg)
+    merge_images(items, likes_avg, username)
 
 
 def most_liked_users(username: str):
     liked_users = twitter_client.get_user_most_liked_users(username)
     names = []
-    for username, _ in liked_users.items():
-        names.append(twitter_client.get_user_name_by_username(username))
+    for _username, _ in liked_users.items():
+        names.append(twitter_client.get_user_name_by_username(_username))
 
     res = liked_users
     items = []
@@ -53,13 +53,14 @@ def most_liked_users(username: str):
         "username": username,
         "result": items
     })
-    merge_images(items)
+    merge_images(items, username=username)
 
 
 # ACTION = "liking_users"
 ACTION = "liked_users"
 
 if __name__ == "__main__":
+    print("Starting to handle", ACTION, "events")
     while True:
         username = redis_client.get_event_from_queue(ACTION)
         if username:

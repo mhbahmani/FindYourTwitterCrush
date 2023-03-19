@@ -111,7 +111,7 @@ class Twitter():
         token_num = self.token_number
         self.update_headers()
         self.update_headers()
-        while next_token := response.json().get('meta', {}).get("next_token"):
+        while True:
             params = {
                 'max_results': 100,
                 'pagination_token': next_token,
@@ -121,6 +121,9 @@ class Twitter():
                 sleep(15 * 60)
                 response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
             liking_users += response.json().get('data', [])
+            next_token = response.json().get('meta', {}).get("next_token")
+            if not next_token:
+                break
         self.update_headers(token_num)
         return liking_users
 
