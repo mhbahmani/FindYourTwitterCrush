@@ -82,6 +82,10 @@ class Twitter():
     def get_tweet_author_username(self, tweet_id: str) -> str:
         return self.tweepy_api.get_status(tweet_id).user.screen_name
 
+    def get_user_likes(self, user_id) -> list:
+        likes = self.twiiter_api.GetFavorites(user_id, count=200)
+        return likes
+
     def get_user_tweets(self, user_id: str) -> list:
         """
             outputs: [{id: , text: }]
@@ -145,7 +149,7 @@ class Twitter():
             for like in likes:
                 liking_users[like.get('username')] = liking_users.get(like.get('username'), 0) + 1
             sleep(5)
-        res = dict(sorted(liking_users.items(), key=lambda x: x[1])[-20:]), sum(like_counts) / len(like_counts)
+        res = dict(sorted(liking_users.items(), key=lambda x: x[1])[-12:]), sum(like_counts) / len(like_counts)
         # print(res)
         return res
 
@@ -160,6 +164,14 @@ class Twitter():
             'Authorization': f"Bearer {self.bearer_tokens[self.token_number]}"
         }
         # print(f"Token updated from {prev_tok} to {self.token_number}")
+
+    def get_user_most_liked_users(self, username: str) -> list:
+        user_id = self.get_user_id_by_user_name(username)
+        user_likes = self.get_user_likes(user_id)
+        liked_users = {}
+        for likes in user_likes:
+            liked_users[likes.user.screen_name] = liked_users.get(likes.user.screen_name, 0) + 1
+        return dict(sorted(liked_users.items(), key=lambda x: x[1])[-12:])
 
     def butify_output(self, username: str) -> None:
         liking_users, likes_avg = self.get_user_huge_fans(username)
@@ -178,4 +190,5 @@ class Twitter():
 
 
 # twitter_client = Twitter()
+# print(twitter_client.get_user_most_liked_users("mh_bahmani"))
 # twitter_client.butify_output("mh_bahmani")
