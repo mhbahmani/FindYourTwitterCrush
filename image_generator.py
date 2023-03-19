@@ -1,4 +1,5 @@
 from PIL import Image
+from PIL import ImageDraw, ImageFont
 
 import requests
 import random
@@ -21,6 +22,8 @@ def merge_images(data: list, avg: float):
 
     image_urls = [person[2] for person in data]
     key = download_image(image_urls)
+    # key = "H4WC6ZDFY3"
+
     images = []
     images_location = [(PROFILE_IMAGES_DISTANCE_X, PROFILE_IMAGES_DISTANCE)]
     for i in range(len(data)):
@@ -31,15 +34,30 @@ def merge_images(data: list, avg: float):
         image = Image.open(f"images/{key}-{i}.jpg")
         image = image.resize((426, 420))
         images.append(image)
-    
+
     #resize, first image
     images_size = images[0].size
-    merged_image = Image.new('RGB',(int(TOTAL_IMAGES/NUM_ROWS) * images_size[0] + IMAGE_BORDER + PROFILE_IMAGES_DISTANCE_X, NUM_ROWS * images_size[1] + IMAGE_BORDER), (250,250,250))
+
+    X = int(TOTAL_IMAGES/NUM_ROWS) * images_size[0] + IMAGE_BORDER + PROFILE_IMAGES_DISTANCE_X
+    Y = NUM_ROWS * images_size[1] + IMAGE_BORDER + 100
+    
+    merged_image = Image.new('RGB',(X, Y), (250,250,250))
     for i in range(len(images)):
         merged_image.paste(images[i], images_location[i])
+    
+    font = ImageFont.truetype("baloo.ttf", 40)
+    image_draw = ImageDraw.Draw(merged_image)
+    for i in range(len(images)):
+        # Write account name and score under the image
+        image_draw.text((images_location[i][0] + 10, images_location[i][1] + 450), f"{data[i][3]} - {data[i][0]}%", fill=(0,0,0), font=font)
 
-    # merged_image.paste(images[i],(images_size[0],0))
+    font = ImageFont.truetype("baloo.ttf", 60)
+    # Write average score in the buttom middle of the image
+    image_draw.text((X/2 - 100, Y - 100), f"Average: {avg}%", fill=(0,0,0), font=font)
+
+    merged_image.paste(images[i],(images_size[0],0))
     merged_image.save(f"{OUTPUT_DIR}/{key}-merged.jpg","JPEG")
+    
     # merged_image.show()
     cleanup_image(key, TOTAL_IMAGES)
 
