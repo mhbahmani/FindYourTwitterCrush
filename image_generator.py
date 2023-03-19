@@ -72,10 +72,13 @@ def merge_images(data: list, avg: float = -1, username: str = None):
         # Write average score in the buttom middle of the image
         image_draw.text((X/2 - 100, Y - 100), f"Average: {avg}%", fill=(0,0,0), font=font)
 
-    merged_image.save(f"{OUTPUT_DIR}/{username}-{key}-merged.jpg","JPEG")
+    output_path = f"{OUTPUT_DIR}/{username}-{key}-merged.jpg"
+    merged_image.save(output_path,"JPEG")
 
     # merged_image.show()
     cleanup_image(key, TOTAL_IMAGES)
+    return output_path
+
 
 def download_image(images: list):
     # generate a random key

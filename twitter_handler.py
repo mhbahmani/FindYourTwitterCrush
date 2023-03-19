@@ -27,6 +27,14 @@ class Twitter():
         )
         self.tweepy_api = tweepy.API(auth)
 
+        write_auth = tweepy.OAuth1UserHandler(
+            config("APP_API_KEY"),
+            config("APP_API_KEY_SECRET"),
+            config("APP_ACCESS_TOKEN"),
+            config("APP_ACCESS_TOKEN_SECRET")
+        )
+        self.write_api = tweepy.API(write_auth)
+
         self.twiiter_api = twitter.Api(
             consumer_key=API_KEY,
             consumer_secret=API_KEY_SECRET,
@@ -35,6 +43,7 @@ class Twitter():
             sleep_on_rate_limit=True
 
         )
+    
     def get_tweet_repliers(self, tweet_id: int, tweet_author: str = None, checked: set = set()) -> list:
         if tweet_author and tweet_author in checked:
             return
@@ -175,8 +184,9 @@ class Twitter():
             liked_users[likes.user.screen_name] = liked_users.get(likes.user.screen_name, 0) + 1
         return dict(sorted(liked_users.items(), key=lambda x: x[1])[-12:])
 
-    def tweet_result(image_path: str):
-        pass
+    def tweet_result(self, image_path: str, tweet_id: str):
+        media = self.write_api.media_upload(image_path)
+        self.write_api.update_status(status=f"تست", media_ids=[media.media_id], in_reply_to_status_id=tweet_id)
 
     def butify_output(self, username: str) -> None:
         liking_users, likes_avg = self.get_user_huge_fans(username)
