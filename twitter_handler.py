@@ -61,7 +61,7 @@ class Twitter():
             for reply in replies:
                 if reply.in_reply_to_status_id == tweet_id:
                     checked.add(reply.user.screen_name)
-                    yield reply.user.screen_name
+                    yield (reply.user.screen_name, reply.id_str)
 
             if len(replies) != 100:
                 break
@@ -174,6 +174,9 @@ class Twitter():
         for likes in user_likes:
             liked_users[likes.user.screen_name] = liked_users.get(likes.user.screen_name, 0) + 1
         return dict(sorted(liked_users.items(), key=lambda x: x[1])[-12:])
+
+    def tweet_result(image_path: str):
+        pass
 
     def butify_output(self, username: str) -> None:
         liking_users, likes_avg = self.get_user_huge_fans(username)

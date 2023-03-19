@@ -52,7 +52,7 @@ def merge_images(data: list, avg: float = -1, username: str = None):
     en_font = ImageFont.truetype("baloo.ttf", 40)
     pr_font = ImageFont.truetype("kamran.ttf", 50)
     image_draw = ImageDraw.Draw(merged_image)
-    template_text = "{} - {}%" if avg else "{} - {}"
+    template_text = "{} - {}%" if avg != -1 else "{} - {}"
     for i in range(len(images)):
         # Write account name and score middle of the image
         text = template_text.format(data[i][1], data[i][0])
