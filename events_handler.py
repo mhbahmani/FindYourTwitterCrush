@@ -32,9 +32,8 @@ def most_liking_users(username: str, tweet_id):
         "username": username,
         "result": items
     })
-    merge_images(items, likes_avg, username)
-
-    # send tweet
+    image_path = merge_images(items, likes_avg, username)
+    twitter_client.tweet_result(image_path, tweet_id)
     
 
 def most_liked_users(username: str, tweet_id):
