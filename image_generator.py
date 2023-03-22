@@ -16,6 +16,7 @@ IMAGE_BORDER = 300
 IMAGE_X = 426
 IMAGE_Y = 420
 
+
 def merge_images(data: list, avg: float = -1, username: str = None):
     TOTAL_IMAGES = len(data)
 
@@ -25,7 +26,7 @@ def merge_images(data: list, avg: float = -1, username: str = None):
 
     image_urls = [person[2] for person in data]
     key = download_image(image_urls)
-    # key = "3WVXNA6QMH"
+    # key = "0OH0AR76CP"
 
     images = []
     images_location = [(PROFILE_IMAGES_DISTANCE_X, PROFILE_IMAGES_DISTANCE)]
@@ -47,7 +48,11 @@ def merge_images(data: list, avg: float = -1, username: str = None):
     
     merged_image = Image.new('RGB',(X, Y), (250,250,250))
     for i in range(len(images)):
-        merged_image.paste(images[i], images_location[i])
+        # paste images with circular mask
+        mask = Image.new('L', images[i].size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0) + images[i].size, fill=255)
+        merged_image.paste(images[i], images_location[i], mask)
     
     en_font = ImageFont.truetype("baloo.ttf", 40)
     pr_font = ImageFont.truetype("kamran.ttf", 50)
@@ -97,5 +102,5 @@ def cleanup_image(key: str, TOTAL_IMAGES: int):
         os.remove(f"images/{key}-{i}.jpg")
 
 
-# items = [[5, 'lunatic_amib', 'http://pbs.twimg.com/profile_images/1627023157772054529/-RMzGzua.jpg', '*فارسی'], [4, 'Erf__Kha', 'http://pbs.twimg.com/profile_images/1424349943700017158/ZVavxLxO.jpg', 'لاس نزن انقد'], [3, 'MehranMontazer', 'http://pbs.twimg.com/profile_images/1606339570173353984/kIbhlC3p.jpg', 'MehranMontazer'], [3, 'ghalbe_abi', 'http://pbs.twimg.com/profile_images/1616080056111202306/NiiNs3my.jpg', 'ghalbe_abi'], [3, 'iamAMT1', 'http://pbs.twimg.com/profile_images/1628855496412102656/oQmQr062.jpg', 'iamAMT1'], [3, 'Milad123454321', 'http://pbs.twimg.com/profile_images/1261047570333405186/FGd75LF4.jpg', 'Milad123454321'], [3, 'A81829', 'http://pbs.twimg.com/profile_images/1439595648878272525/qCtkEj1d.jpg', 'A81829'], [3, 'farida__qp', 'http://pbs.twimg.com/profile_images/1562369411809509376/jLcOILIC.jpg', 'لاس کار بدیه'], [2, 'SkySep999', 'http://pbs.twimg.com/profile_images/1614362795520180226/kb5GJCtc.jpg', 'SkySep999'], [2, 'mobiiinaaa', 'http://pbs.twimg.com/profile_images/1588796368071557120/fIVDD8O9.jpg', 'mobiiinaaa'], [2, 'armitajli', 'http://pbs.twimg.com/profile_images/1606269624701550592/wS7BlzY_.jpg', 'armitajli'], [2, 'AFarsangi', 'http://pbs.twimg.com/profile_images/1573223251949637635/y8pBBKMB.jpg', 'AFarsangi']]
+# items = [[5, 'lunatic_amib', 'http://pbs.twimg.com/profile_images/1627023157772054529/-RMzGzua.jpg', '*فارسی'], [4, 'Erf__Kha', 'https://pbs.twimg.com/profile_images/1636885496835063808/CcVomPqU_400x400.jpg', 'لاس نزن انقد'], [3, 'MehranMontazer', 'http://pbs.twimg.com/profile_images/1606339570173353984/kIbhlC3p.jpg', 'MehranMontazer'], [3, 'ghalbe_abi', 'http://pbs.twimg.com/profile_images/1616080056111202306/NiiNs3my.jpg', 'ghalbe_abi'], [3, 'iamAMT1', 'http://pbs.twimg.com/profile_images/1628855496412102656/oQmQr062.jpg', 'iamAMT1'], [3, 'Milad123454321', 'http://pbs.twimg.com/profile_images/1261047570333405186/FGd75LF4.jpg', 'Milad123454321'], [3, 'A81829', 'http://pbs.twimg.com/profile_images/1439595648878272525/qCtkEj1d.jpg', 'A81829'], [3, 'farida__qp', 'http://pbs.twimg.com/profile_images/1562369411809509376/jLcOILIC.jpg', 'لاس کار بدیه'], [2, 'SkySep999', 'http://pbs.twimg.com/profile_images/1614362795520180226/kb5GJCtc.jpg', 'SkySep999'], [2, 'mobiiinaaa', 'https://pbs.twimg.com/profile_images/1636817146780041216/Sk2KHU-x_400x400.jpg', 'mobiiinaaa'], [2, 'armitajli', 'http://pbs.twimg.com/profile_images/1606269624701550592/wS7BlzY_.jpg', 'armitajli'], [2, 'AFarsangi', 'http://pbs.twimg.com/profile_images/1573223251949637635/y8pBBKMB.jpg', 'AFarsangi']]
 # merge_images(items, 3.2)
