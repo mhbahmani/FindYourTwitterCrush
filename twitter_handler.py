@@ -120,6 +120,7 @@ class Twitter():
         token_num = self.token_number
         self.update_headers()
         self.update_headers()
+        next_token = None
         while True:
             params = {
                 'max_results': 100,
