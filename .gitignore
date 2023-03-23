@@ -173,3 +173,5 @@ poetry.toml
 # End of https://www.toptal.com/developers/gitignore/api/python
 *listener
 *images
+bot_tokens.txt
+oauth_tokens.txt
