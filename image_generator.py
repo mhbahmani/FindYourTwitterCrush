@@ -77,7 +77,10 @@ def merge_images(data: list, avg: float = -1, username: str = None):
         # Write average score in the buttom middle of the image
         image_draw.text((X/2 - 100, Y - 100), f"Average: {avg}%", fill=(0,0,0), font=font)
 
-    output_path = f"{OUTPUT_DIR}/{username}-{key}-merged.jpg"
+    if avg != -1:
+        output_path = f"{OUTPUT_DIR}/{username}-{key}-liking.jpg"
+    else:
+        output_path = f"{OUTPUT_DIR}/{username}-{key}-liked.jpg"
     merged_image.save(output_path,"JPEG")
 
     # merged_image.show()
