@@ -1,6 +1,6 @@
 from twitter_handler import Twitter
 from redis_handler import Redis
-from image_generator import merge_images, retrieve_image_path, OUTPUT_DIR
+from image_generator import merge_images, retrieve_image_path
 
 from decouple import config
 
