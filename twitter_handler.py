@@ -158,6 +158,7 @@ class Twitter():
             print(f"{int(counter / len(tweets) * 100)}% has been processed", tweet.get('id'))
             if counter % 15 == 14:
                 self.update_headers()
+                print("Changing token and waiting 30 seconds")
                 sleep(30)
             try:
                 likes = self.get_tweet_likes(tweet.get('id'))
