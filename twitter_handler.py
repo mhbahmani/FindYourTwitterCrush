@@ -5,9 +5,10 @@ import requests
 import tweepy
 import twitter
 import time
-
+import os
 
 from decouple import config
+
 
 API_KEY = config("API_KEY2")
 API_KEY_SECRET = config("API_KEY_SECRET2")
@@ -43,6 +44,9 @@ class Twitter():
             sleep_on_rate_limit=True
 
         )
+
+        self.bot_api = None
+        self.get_bot_token()
     
     def get_tweet_repliers(self, tweet_id: int, tweet_author: str = None, checked: set = set()) -> list:
         if tweet_author and tweet_author in checked:
@@ -185,8 +189,8 @@ class Twitter():
         return dict(sorted(liked_users.items(), key=lambda x: x[1])[-12:])
 
     def tweet_result(self, image_path: str, tweet_id: str):
-        media = self.write_api.media_upload(image_path)
-        self.write_api.update_status(status=f"تست", media_ids=[media.media_id], in_reply_to_status_id=tweet_id)
+        media = self.bot_api.media_upload(image_path)
+        self.bot_api.update_status(status=f"تست", media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
 
     def butify_output(self, username: str) -> None:
         liking_users, likes_avg = self.get_user_huge_fans(username)
@@ -203,7 +207,77 @@ class Twitter():
         print(liking_users)
         print(list(liking_users.keys()))
 
+    def get_bot_token(self):
+        # if token file exists, load tokens from it
+        tokens_file_path = "bot_tokens.txt"
+        tokens = None
+        if os.path.exists(tokens_file_path):
+            with open(tokens_file_path, "r") as f:
+                tokens = f.read()
+        if tokens: 
+            access_token, access_token_secret = tokens.split()
+        else:
+            oauth1_user_handler = tweepy.OAuth1UserHandler(
+                config("APP_API_KEY"),
+                config("APP_API_KEY_SECRET"),
+                config("APP_ACCESS_TOKEN"),
+                config("APP_ACCESS_TOKEN_SECRET"),
+                callback="http://51.89.107.199:5000/callback"
+            )
+            print(oauth1_user_handler.get_authorization_url())
+            # check if tokens file is exists
+            # if not, wait for 1 second
+            # if tokens file exists, read it and return the tokens
+            tokens_file_path = "oauth_tokens.txt"
+            while True:
+                if os.path.exists(tokens_file_path):
+                    with open(tokens_file_path, "r") as f:
+                        tokens = f.read()
+                    if tokens:
+                        break
+                sleep(2)
+            os.remove(tokens_file_path)
+            oauth_token, oauth_verifier = tokens.split(" ")
 
-# twitter_client = Twitter()
+            request_token = oauth1_user_handler.request_token["oauth_token"]
+            request_secret = oauth1_user_handler.request_token["oauth_token_secret"]
+            print(request_secret, request_token)
+
+            new_oauth1_user_handler = tweepy.OAuth1UserHandler(
+                request_token, request_secret,
+                callback="http://51.89.107.199:5000/callback"
+            )
+            new_oauth1_user_handler.request_token = {
+                "oauth_token": oauth_token,
+                "oauth_token_secret": request_secret
+            }
+            access_token, access_token_secret = (
+                new_oauth1_user_handler.get_access_token(
+                    oauth_verifier
+                )
+            )
+
+        self.save_bot_tokens(access_token, access_token_secret)
+        auth = tweepy.OAuth1UserHandler(
+            config("APP_API_KEY"), config("APP_API_KEY_SECRET"),
+            access_token, access_token_secret
+        )
+        self.bot_api = tweepy.API(auth)
+        # Generate random text and send it to twitter
+        import random, string
+        text = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        try:
+            self.bot_api.update_status(text)
+        except Exception as e:
+            print(e)
+            if os.path.exists(tokens_file_path):
+                os.remove(tokens_file_path)
+                self.get_bot_token()
+
+    def save_bot_tokens(self, access_token: str, access_token_secret: str):
+        tokens_file_path = "bot_tokens.txt"
+        with open(tokens_file_path, "w") as f:
+            f.write(f"{access_token} {access_token_secret}")
+
 # print(twitter_client.get_user_most_liked_users("mh_bahmani"))
 # print(twitter_client.get_user_huge_fans("mh_bahmani"))
