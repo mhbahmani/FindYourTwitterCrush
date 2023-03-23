@@ -1,9 +1,13 @@
 from http.client import TOO_MANY_REQUESTS
 from time import sleep
 
+from messages import RESULT_TWEET_TEXTS
+
+
 import requests
 import tweepy
 import twitter
+import random
 import time
 import os
 
@@ -20,13 +24,16 @@ ACCESS_TOKEN_SECRET=config("ACCESS_TOKEN_SECRET2")
 class Twitter():
     def __init__(self) -> None:
         self.token_number = 2
-        self.bearer_tokens = [config("BEARER_TOKEN1"), config("BEARER_TOKEN2"), config("BEARER_TOKEN3")]
+        self.bearer_tokens = [config("BEARER_TOKEN1"), config("BEARER_TOKEN2"), config("BEARER_TOKEN3"), config("APP_BEARER_TOKEN")]
         self.update_headers()
         
         auth = tweepy.OAuth1UserHandler(
         API_KEY, API_KEY_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
         )
-        self.tweepy_api = tweepy.API(auth)
+        self.tweepy_api = tweepy.API(auth, wait_on_rate_limit=True)
+        self.client = tweepy.Client(
+            config("BEARER_TOKEN2")
+        )
 
         write_auth = tweepy.OAuth1UserHandler(
             config("APP_API_KEY"),
@@ -96,6 +103,7 @@ class Twitter():
 
     def get_user_likes(self, user_id) -> list:
         likes = self.twiiter_api.GetFavorites(user_id, count=200)
+        # likes = self.client.get_liked_tweets(user_id, max_results=200)
         return likes
 
     def get_user_tweets(self, user_id: str) -> list:
@@ -146,7 +154,7 @@ class Twitter():
         liking_users = {}
         like_counts = []
         for tweet in tweets:
-            print(f"{counter} / {len(tweets) * 100} has been processed")
+            print(f"{int(counter / len(tweets) * 100)}% has been processed", tweet.get('id'))
             if counter % 15 == 14:
                 self.update_headers()
                 sleep(30)
@@ -190,7 +198,7 @@ class Twitter():
 
     def tweet_result(self, image_path: str, tweet_id: str):
         media = self.bot_api.media_upload(image_path)
-        self.bot_api.update_status(status=f"تست", media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
+        self.bot_api.update_status(status=self.generate_result_tweet_text(), media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
 
     def butify_output(self, username: str) -> None:
         liking_users, likes_avg = self.get_user_huge_fans(username)
@@ -279,5 +287,9 @@ class Twitter():
         with open(tokens_file_path, "w") as f:
             f.write(f"{access_token} {access_token_secret}")
 
+    def generate_result_tweet_text(self) -> str:
+        # Choose random element of messages list
+        return random.choice(RESULT_TWEET_TEXTS)
+        
 # print(twitter_client.get_user_most_liked_users("mh_bahmani"))
-# print(twitter_client.get_user_huge_fans("mh_bahmani"))
+# print(twitter_client.get_user_huge_fans("mh_bahmani")
