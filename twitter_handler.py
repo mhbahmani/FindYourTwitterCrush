@@ -140,6 +140,7 @@ class Twitter():
             }
             response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
             if response.status_code == TOO_MANY_REQUESTS:
+                print("Wait in get_tweet_likes")
                 sleep(15 * 60)
                 response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
             liking_users += response.json().get('data', [])
