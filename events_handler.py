@@ -21,6 +21,7 @@ def most_liking_users(username: str, tweet_id):
     if CHECK_IMAGE_CACHE:
         cached_path = retrieve_image_path(username, "liking")
         if cached_path:
+            print("Found cached image for", username, "in", cached_path)
             twitter_client.tweet_result(cached_path, tweet_id)
             return
 
@@ -51,6 +52,7 @@ def most_liked_users(username: str, tweet_id):
     if CHECK_IMAGE_CACHE:
         cached_path = retrieve_image_path(username, "liked")
         if cached_path:
+            print("Found cached image for", username, "in", cached_path)
             twitter_client.tweet_result(cached_path, tweet_id)
             return
 
