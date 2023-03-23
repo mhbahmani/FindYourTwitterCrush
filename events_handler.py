@@ -1,6 +1,8 @@
 from twitter_handler import Twitter
 from redis_handler import Redis
-from image_generator import merge_images
+from image_generator import merge_images, retrieve_image_path, OUTPUT_DIR
+
+from decouple import config
 
 from db import DB
 
@@ -12,7 +14,16 @@ twitter_client = Twitter()
 redis_client = Redis()
 
 
+CHECK_IMAGE_CACHE = config("CHECK_IMAGE_CACHE", True, cast=bool)
+
+
 def most_liking_users(username: str, tweet_id):
+    if CHECK_IMAGE_CACHE:
+        cached_path = retrieve_image_path(username, "liking")
+        if cached_path:
+            twitter_client.tweet_result(cached_path, tweet_id)
+            return
+
     print("Finding most liking users for", username)
     liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
     names = []
@@ -37,6 +48,12 @@ def most_liking_users(username: str, tweet_id):
     
 
 def most_liked_users(username: str, tweet_id):
+    if CHECK_IMAGE_CACHE:
+        cached_path = retrieve_image_path(username, "liked")
+        if cached_path:
+            twitter_client.tweet_result(cached_path, tweet_id)
+            return
+
     liked_users = twitter_client.get_user_most_liked_users(username)
     names = []
     for _username, _ in liked_users.items():
