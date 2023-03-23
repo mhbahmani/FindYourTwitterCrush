@@ -184,7 +184,7 @@ class Twitter():
             self.token_number += 1
         else:
             self.token_number = token_num
-        self.token_number %= 3
+        self.token_number %= len(self.bearer_tokens)
         self.headers = {
             'Authorization': f"Bearer {self.bearer_tokens[self.token_number]}"
         }
