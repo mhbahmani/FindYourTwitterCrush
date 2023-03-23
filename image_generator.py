@@ -107,9 +107,13 @@ def cleanup_image(key: str, TOTAL_IMAGES: int):
 
 def retrieve_image_path(username: str, type: str):
     if type == "liking":
-        return f"{OUTPUT_DIR}/{username}-liking.jpg"
+        path = f"{OUTPUT_DIR}/{username}-liking.jpg"
+        if os.path.exists(path):
+            return path
     elif type == "liked":
-        return f"{OUTPUT_DIR}/{username}-liked.jpg"
+        path = f"{OUTPUT_DIR}/{username}-liked.jpg"
+        if os.path.exists(path):
+            return path
 
 # items = [[5, 'lunatic_amib', 'http://pbs.twimg.com/profile_images/1627023157772054529/-RMzGzua.jpg', '*فارسی'], [4, 'Erf__Kha', 'https://pbs.twimg.com/profile_images/1636885496835063808/CcVomPqU_400x400.jpg', 'لاس نزن انقد'], [3, 'MehranMontazer', 'http://pbs.twimg.com/profile_images/1606339570173353984/kIbhlC3p.jpg', 'MehranMontazer'], [3, 'ghalbe_abi', 'http://pbs.twimg.com/profile_images/1616080056111202306/NiiNs3my.jpg', 'ghalbe_abi'], [3, 'iamAMT1', 'http://pbs.twimg.com/profile_images/1628855496412102656/oQmQr062.jpg', 'iamAMT1'], [3, 'Milad123454321', 'http://pbs.twimg.com/profile_images/1261047570333405186/FGd75LF4.jpg', 'Milad123454321'], [3, 'A81829', 'http://pbs.twimg.com/profile_images/1439595648878272525/qCtkEj1d.jpg', 'A81829'], [3, 'farida__qp', 'http://pbs.twimg.com/profile_images/1562369411809509376/jLcOILIC.jpg', 'لاس کار بدیه'], [2, 'SkySep999', 'http://pbs.twimg.com/profile_images/1614362795520180226/kb5GJCtc.jpg', 'SkySep999'], [2, 'mobiiinaaa', 'https://pbs.twimg.com/profile_images/1636817146780041216/Sk2KHU-x_400x400.jpg', 'mobiiinaaa'], [2, 'armitajli', 'http://pbs.twimg.com/profile_images/1606269624701550592/wS7BlzY_.jpg', 'armitajli'], [2, 'AFarsangi', 'http://pbs.twimg.com/profile_images/1573223251949637635/y8pBBKMB.jpg', 'AFarsangi']]
 # merge_images(items, 3.2)
