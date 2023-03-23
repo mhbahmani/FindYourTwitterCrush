@@ -106,7 +106,7 @@ class Twitter():
         return response.json().get('data', [])
 
     def get_tweet_likes(self, tweet_id: str) -> list:
-        print(tweet_id)
+        # print(tweet_id)
         params = {
             'max_results': 100,
         }
@@ -120,8 +120,8 @@ class Twitter():
         token_num = self.token_number
         self.update_headers()
         self.update_headers()
-        next_token = None
-        while True:
+        next_token = response.json().get('meta', {}).get("next_token")
+        while next_token:
             params = {
                 'max_results': 100,
                 'pagination_token': next_token,
@@ -132,8 +132,6 @@ class Twitter():
                 response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
             liking_users += response.json().get('data', [])
             next_token = response.json().get('meta', {}).get("next_token")
-            if not next_token:
-                break
         self.update_headers(token_num)
         return liking_users
 
@@ -144,7 +142,8 @@ class Twitter():
         liking_users = {}
         like_counts = []
         for tweet in tweets:
-            if counter % 15 == 0:
+            print(f"{counter} / {len(tweets) * 100} has been processed")
+            if counter % 15 == 14:
                 self.update_headers()
                 sleep(30)
             try:
@@ -207,4 +206,4 @@ class Twitter():
 
 # twitter_client = Twitter()
 # print(twitter_client.get_user_most_liked_users("mh_bahmani"))
-# twitter_client.butify_output("mh_bahmani")
+# print(twitter_client.get_user_huge_fans("mh_bahmani"))

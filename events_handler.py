@@ -58,10 +58,15 @@ def most_liked_users(username: str, tweet_id):
     twitter_client.tweet_result(image_path, tweet_id)
     
 
-# ACTION = "liking_users"
-ACTION = "liked_users"
+ACTION = "liking_users"
+# ACTION = "liked_users"
+
 
 if __name__ == "__main__":
+    # username, tweet_id = "mh_bahmani", None
+    # most_liking_users(username, tweet_id)
+    # exit()
+
     print("Starting to handle", ACTION, "events")
     while True:
         event = redis_client.get_event_from_queue(ACTION)
