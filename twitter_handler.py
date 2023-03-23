@@ -24,16 +24,17 @@ ACCESS_TOKEN_SECRET=config("ACCESS_TOKEN_SECRET2")
 class Twitter():
     def __init__(self) -> None:
         self.token_number = 2
-        self.bearer_tokens = [config("BEARER_TOKEN1"), config("BEARER_TOKEN2"), config("BEARER_TOKEN3"), config("APP_BEARER_TOKEN")]
+        self.bearer_tokens = [config("BEARER_TOKEN1"), config("BEARER_TOKEN2"), config("BEARER_TOKEN3")]
         self.update_headers()
         
         auth = tweepy.OAuth1UserHandler(
         API_KEY, API_KEY_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
         )
         self.tweepy_api = tweepy.API(auth, wait_on_rate_limit=True)
-        self.client = tweepy.Client(
-            config("BEARER_TOKEN2")
-        )
+
+        # self.client = tweepy.Client(
+        #     config("BEARER_TOKEN2")
+        # )
 
         write_auth = tweepy.OAuth1UserHandler(
             config("APP_API_KEY"),
