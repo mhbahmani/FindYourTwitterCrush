@@ -1,10 +1,12 @@
 from http.client import TOO_MANY_REQUESTS
 from collections import Counter
 from time import sleep
+from pytz import UTC
 
 from messages import RESULT_TWEET_TEXTS
 
 import requests
+import datetime
 import tweepy
 import twitter
 import random
@@ -118,7 +120,10 @@ class Twitter():
                 continue
             likes += response.data
             print("likes", len(likes))
-            return likes
+            # if tweet was older than one year
+            last_year_date = datetime.datetime.now() - datetime.timedelta(days=365)
+            last_year_date = last_year_date.replace(tzinfo=UTC)
+            if response.data and response.data[-1].created_at < last_year_date: break
             next_token = response.meta.get("next_token")
             if not next_token: break
             time.sleep(5)
@@ -351,6 +356,6 @@ class Twitter():
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
         
-twitter_client = Twitter()
-print(twitter_client.get_user_most_liked_users("mh_bahmani"))
+# twitter_client = Twitter()
+# print(twitter_client.get_user_most_liked_users("mh_bahmani"))
 # print(twitter_client.get_user_huge_fans("mh_bahmani"))
