@@ -75,7 +75,7 @@ def merge_images(data: list, avg: float = -1, username: str = None):
     if avg != -1:
         font = ImageFont.truetype("baloo.ttf", 60)
         # Write average score in the buttom middle of the image
-        image_draw.text((X/2 - 100, Y - 100), f"Average: {avg}%", fill=(0,0,0), font=font)
+        image_draw.text((X/2 - 100, Y - 100), f"Average: {avg}", fill=(0,0,0), font=font)
 
     if avg != -1:
         output_path = f"{OUTPUT_DIR}/{username}-liking.jpg"
