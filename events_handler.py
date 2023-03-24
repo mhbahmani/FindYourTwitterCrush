@@ -80,10 +80,10 @@ ACTION = "liking_users"
 
 
 if __name__ == "__main__":
-    username, tweet_id = "mh_bahmani", 1638991765880426499
-    # most_liking_users(username, tweet_id)
-    most_liked_users(username, tweet_id)
-    exit()
+    # username, tweet_id = "mh_bahmani", 1638991765880426499
+    # # most_liking_users(username, tweet_id)
+    # most_liked_users(username, tweet_id)
+    # exit()
 
     print("Starting to handle", ACTION, "events")
     while True:
