@@ -1,8 +1,8 @@
 from http.client import TOO_MANY_REQUESTS
+from collections import Counter
 from time import sleep
 
 from messages import RESULT_TWEET_TEXTS
-
 
 import requests
 import tweepy
@@ -32,9 +32,9 @@ class Twitter():
         )
         self.tweepy_api = tweepy.API(auth, wait_on_rate_limit=True)
 
-        # self.client = tweepy.Client(
-        #     config("BEARER_TOKEN2")
-        # )
+        self.clients = [tweepy.Client(token) for token in self.bearer_tokens]
+        self.client_number = 0
+        self.client = self.clients[self.client_number]
 
         write_auth = tweepy.OAuth1UserHandler(
             config("APP_API_KEY"),
@@ -103,8 +103,25 @@ class Twitter():
         return self.tweepy_api.get_status(tweet_id).user.screen_name
 
     def get_user_likes(self, user_id) -> list:
-        likes = self.twiiter_api.GetFavorites(user_id, count=200)
-        # likes = self.client.get_liked_tweets(user_id, max_results=200)
+        likes = []
+        next_token = None
+        while True:
+            try:
+                response = self.client.get_liked_tweets(
+                    user_id, max_results=100,
+                    pagination_token=next_token,
+                    tweet_fields=["created_at", "author_id"])
+            except Exception as e:
+                print(e)
+                self.update_client()
+                # time.sleep(10 * 60)
+                continue
+            likes += response.data
+            print("likes", len(likes))
+            return likes
+            next_token = response.meta.get("next_token")
+            if not next_token: break
+            time.sleep(5)
         return likes
 
     def get_user_tweets(self, user_id: str) -> list:
@@ -115,7 +132,20 @@ class Twitter():
             'max_results': 100,
             'exclude': 'replies,retweets',
         }
-        response = requests.get(f'https://api.twitter.com/2/users/{user_id}/tweets', headers=self.headers, params=params)
+        tweets = []
+        while True:
+            response = requests.get(f'https://api.twitter.com/2/users/{user_id}/tweets', headers=self.headers, params=params)
+            if response.status_code == TOO_MANY_REQUESTS:
+                print("Wait in get_user_tweets")
+                self.update_headers()
+                # time.sleep(10 * 60)
+                continue
+            tweets += response.json().get('data', [])
+            print("tweets", len(tweets))
+            next_token = response.json().get('meta', {}).get("next_token")
+            if not next_token: break
+            params['pagination_token'] = next_token
+            time.sleep(5)
         return response.json().get('data', [])
 
     def get_tweet_likes(self, tweet_id: str) -> list:
@@ -191,17 +221,44 @@ class Twitter():
         }
         # print(f"Token updated from {prev_tok} to {self.token_number}")
 
+    def update_client(self) -> None:
+        self.client_number += 1
+        self.client = self.clients[self.client_number % len(self.clients)]
+
+    def get_users_by_user_id_list(self, user_ids: list) -> str:
+        users = self.tweepy_api.lookup_users(user_id=user_ids, include_entities=False)
+        return users
+
     def get_user_most_liked_users(self, username: str) -> list:
         user_id = self.get_user_id_by_user_name(username)
-        user_likes = self.get_user_likes(user_id)
-        liked_users = {}
-        for likes in user_likes:
-            liked_users[likes.user.screen_name] = liked_users.get(likes.user.screen_name, 0) + 1
-        return dict(sorted(liked_users.items(), key=lambda x: x[1])[-12:])
+        liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id)]
+        users_data = {}
+        i = 0
+        # Pass 100 user ids each time to get_username_by_user_id_list
+        # count each user id
+        count_each_user_id = Counter(liked_user_ids)
+        liked_user_ids = list(set(liked_user_ids))
+        while i < len(liked_user_ids):
+            if i + 100 >= len(liked_user_ids):
+                liked_users_object = self.get_users_by_user_id_list(liked_user_ids[i:])
+            else:
+                liked_users_object = self.get_users_by_user_id_list(liked_user_ids[i:i + 100])
+            for user in liked_users_object:
+                users_data[user.screen_name] = {
+                    "name": user.name,
+                    "profile_image_url": self.fix_image_address(user.profile_image_url_https),
+                    "count": count_each_user_id.get(user.id, 0),
+                }
+            i += 100
+        return dict(sorted(users_data.items(), key=lambda x: x[1].get("count", 0))[-12:])
 
     def tweet_result(self, image_path: str, tweet_id: str):
         media = self.bot_api.media_upload(image_path)
         self.bot_api.update_status(status=self.generate_result_tweet_text(), media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
+
+    def fix_image_address(self, image_link) -> str:
+        # remove _normal.jpg from image like
+        return image_link.replace("_normal.jpg", ".jpg")
 
     def butify_output(self, username: str) -> None:
         liking_users, likes_avg = self.get_user_huge_fans(username)
@@ -294,5 +351,6 @@ class Twitter():
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
         
-# print(twitter_client.get_user_most_liked_users("mh_bahmani"))
-# print(twitter_client.get_user_huge_fans("mh_bahmani")
+twitter_client = Twitter()
+print(twitter_client.get_user_most_liked_users("mh_bahmani"))
+# print(twitter_client.get_user_huge_fans("mh_bahmani"))
