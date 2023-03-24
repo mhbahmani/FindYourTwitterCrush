@@ -23,6 +23,7 @@ def most_liking_users(username: str, tweet_id):
         if cached_path:
             print("Found cached image for", username, "in", cached_path)
             twitter_client.tweet_result(cached_path, tweet_id)
+            print("Tweeted result for", username, "in", cached_path)
             return
 
     print("Finding most liking users for", username)
@@ -46,6 +47,7 @@ def most_liking_users(username: str, tweet_id):
     })
     image_path = merge_images(items, likes_avg, username)
     twitter_client.tweet_result(image_path, tweet_id)
+    print("Tweeted result for", username, "in", image_path)
     
 
 def most_liked_users(username: str, tweet_id):
