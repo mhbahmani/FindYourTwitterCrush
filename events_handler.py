@@ -54,21 +54,16 @@ def most_liked_users(username: str, tweet_id):
         if cached_path:
             print("Found cached image for", username, "in", cached_path)
             twitter_client.tweet_result(cached_path, tweet_id)
+            print("Tweeted result for", username, "in", cached_path)
             return
 
     liked_users = twitter_client.get_user_most_liked_users(username)
-    names = []
-    for _username, _ in liked_users.items():
-        names.append(twitter_client.get_user_name_by_username(_username))
 
-    res = liked_users
     items = []
-    l = list(reversed(list(res.items())[-12:]))
-    i = 0
-    for user, val in l:
-        i += 1
-        items.append([val, user, twitter_client.get_user_profile_image(user).replace("_normal", ""), names[-i]])
-    
+    liked_users = list(reversed(list(liked_users.items())[-12:]))
+    for _username, data in liked_users:
+        items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
+
     db_client.add_handled_liked({
         "username": username,
         "result": items
@@ -83,10 +78,10 @@ ACTION = "liking_users"
 
 
 if __name__ == "__main__":
-    # username, tweet_id = "iamAMT1", 1638993183433543694
-    # # most_liking_users(username, tweet_id)
-    # most_liked_users(username, tweet_id)
-    # exit()
+    username, tweet_id = "mh_bahmani", 1638991765880426499
+    # most_liking_users(username, tweet_id)
+    most_liked_users(username, tweet_id)
+    exit()
 
     print("Starting to handle", ACTION, "events")
     while True:
