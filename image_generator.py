@@ -1,5 +1,8 @@
 from PIL import Image
 from PIL import ImageDraw, ImageFont
+
+from messages import MOST_LIKING_USERS_TITLE, MOST_LIKED_USERS_TITLE
+
 import langdetect
 
 import requests
@@ -20,21 +23,23 @@ IMAGE_Y = 420
 def merge_images(data: list, avg: float = -1, username: str = None):
     TOTAL_IMAGES = len(data)
 
+    TITLE_LINE_LENGTH = 120
+
     PROFILE_IMAGES_DISTANCE = 20
     PROFILE_IMAGES_DISTANCE_X = int(IMAGE_BORDER / (TOTAL_IMAGES / NUM_ROWS))
     PROFILE_IMAGES_DISTANCE_Y = int(IMAGE_BORDER / NUM_ROWS)
 
     image_urls = [person[2] for person in data]
     key = download_image(image_urls)
-    # key = "0OH0AR76CP"
+    # key = "VZUCJ8ZQYD"
 
     images = []
-    images_location = [(PROFILE_IMAGES_DISTANCE_X, PROFILE_IMAGES_DISTANCE)]
+    images_location = [(PROFILE_IMAGES_DISTANCE_X, PROFILE_IMAGES_DISTANCE + TITLE_LINE_LENGTH)]
     for i in range(len(data)):
         if i != 0 and i <= 5:
-            images_location.append((i * images[i-1].size[0] + (i+1) * PROFILE_IMAGES_DISTANCE_X, PROFILE_IMAGES_DISTANCE))
+            images_location.append((i * images[i-1].size[0] + (i+1) * PROFILE_IMAGES_DISTANCE_X, PROFILE_IMAGES_DISTANCE + TITLE_LINE_LENGTH))
         elif i > 5:
-            images_location.append(((i-6) * images[i-1].size[0] + (i-5) * PROFILE_IMAGES_DISTANCE_X, images[i-1].size[1] + PROFILE_IMAGES_DISTANCE_Y + 20))
+            images_location.append(((i-6) * images[i-1].size[0] + (i-5) * PROFILE_IMAGES_DISTANCE_X, images[i-1].size[1] + PROFILE_IMAGES_DISTANCE_Y + 20 + TITLE_LINE_LENGTH))
         image = Image.open(f"images/{key}-{i}.jpg")
         image = image.resize((IMAGE_X, IMAGE_Y))
         images.append(image)
@@ -43,10 +48,14 @@ def merge_images(data: list, avg: float = -1, username: str = None):
     images_size = images[0].size
 
     X = int(TOTAL_IMAGES/NUM_ROWS) * images_size[0] + IMAGE_BORDER + PROFILE_IMAGES_DISTANCE_X
-    Y = NUM_ROWS * images_size[1] + IMAGE_BORDER
+    Y = NUM_ROWS * images_size[1] + IMAGE_BORDER + TITLE_LINE_LENGTH
     if avg != -1: Y += 100
     
     merged_image = Image.new('RGB',(X, Y), (250,250,250))
+    title = MOST_LIKING_USERS_TITLE if avg != -1 else MOST_LIKED_USERS_TITLE
+    font = ImageFont.truetype("kamran.ttf", 70)
+    image_draw = ImageDraw.Draw(merged_image)
+    image_draw.text((X/2 - len(title) / 2 * 20, TITLE_LINE_LENGTH / 2 - 20), title, fill=(0,0,0), font=font)
     for i in range(len(images)):
         # paste images with circular mask
         mask = Image.new('L', images[i].size, 0)

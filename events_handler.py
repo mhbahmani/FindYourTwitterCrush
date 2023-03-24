@@ -64,12 +64,12 @@ def most_liked_users(username: str, tweet_id):
     for _username, data in liked_users:
         items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
 
+    image_path = merge_images(items, username=username)
+    twitter_client.tweet_result(image_path, tweet_id)
     db_client.add_handled_liked({
         "username": username,
         "result": items
     })
-    image_path = merge_images(items, username=username)
-    twitter_client.tweet_result(image_path, tweet_id)
     print("Tweeted result for", username, "in", image_path)
     
 
@@ -78,10 +78,10 @@ ACTION = "liking_users"
 
 
 if __name__ == "__main__":
-    # username, tweet_id = "mh_bahmani", 1638991765880426499
-    # # most_liking_users(username, tweet_id)
-    # most_liked_users(username, tweet_id)
-    # exit()
+    username, tweet_id = "mh_bahmani", 1638991765880426499
+    # most_liking_users(username, tweet_id)
+    most_liked_users(username, tweet_id)
+    exit()
 
     print("Starting to handle", ACTION, "events")
     while True:
