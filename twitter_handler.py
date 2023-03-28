@@ -199,15 +199,16 @@ class Twitter():
                 self.update_headers()
                 print("Changing token and waiting 30 seconds")
                 sleep(30)
-            try:
-                likes = self.get_tweet_likes(tweet.get('id'))
-            except Exception as e:
-                print(e)
-                self.update_headers()
-                print("Changing token and waiting 5 minutes")
-                sleep(5 * 60)
-                print("Trying again")
-                likes = self.get_tweet_likes(tweet.get('id'))
+            while True:
+                try:
+                    likes = self.get_tweet_likes(tweet.get('id'))
+                    break
+                except Exception as e:
+                    print(e)
+                    self.update_headers()
+                    print("Changing token and waiting 5 minutes")
+                    sleep(5 * 60)
+                    print("Trying again")
             counter += 1
             total_likes += len(likes)
             # print(counter)
