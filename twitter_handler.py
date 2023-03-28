@@ -143,7 +143,7 @@ class Twitter():
             if response.status_code == TOO_MANY_REQUESTS:
                 print("Wait in get_user_tweets")
                 self.update_headers()
-                # time.sleep(10 * 60)
+                time.sleep(10 * 60)
                 continue
             tweets += response.json().get('data', [])
             print("tweets", len(tweets))
@@ -169,18 +169,20 @@ class Twitter():
         liking_users += response.json().get('data', [])
         token_num = self.token_number
         self.update_headers()
-        self.update_headers()
         next_token = response.json().get('meta', {}).get("next_token")
         while next_token:
             params = {
                 'max_results': 100,
+                'user.fields': 'name,profile_image_url,username',
                 'pagination_token': next_token,
             }
             response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
             if response.status_code == TOO_MANY_REQUESTS:
                 print("Wait in get_tweet_likes")
-                sleep(15 * 60)
-                response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
+                self.update_headers()
+                sleep(5 * 60)
+                print("Retrying")
+                continue
             liking_users += response.json().get('data', [])
             next_token = response.json().get('meta', {}).get("next_token")
         self.update_headers(token_num)
