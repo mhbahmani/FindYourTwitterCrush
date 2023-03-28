@@ -272,21 +272,6 @@ class Twitter():
         # remove _normal.jpg from image like
         return image_link.replace("_normal.jpg", ".jpg")
 
-    def butify_output(self, username: str) -> None:
-        liking_users, likes_avg = self.get_user_huge_fans(username)
-        res = {}
-        print()
-        liking = {}
-        for username, likes in liking_users.items():
-            name = self.get_user_name_by_username(username)
-            liking[name] = f"{likes}%"
-            print(f"{name} ({username}): {likes}%")
-        print(f"میانگین لایک: {likes_avg}")
-        print()
-        print()
-        print(liking_users)
-        print(list(liking_users.keys()))
-
     def get_bot_token(self):
         # if token file exists, load tokens from it
         tokens_file_path = "bot_tokens.txt"
