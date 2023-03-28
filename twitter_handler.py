@@ -116,7 +116,7 @@ class Twitter():
             except Exception as e:
                 print(e)
                 self.update_client()
-                # time.sleep(10 * 60)
+                time.sleep(5 * 60)
                 continue
             likes += response.data
             print("likes", len(likes))
@@ -204,7 +204,9 @@ class Twitter():
             except Exception as e:
                 print(e)
                 self.update_headers()
-                sleep(15 * 60)
+                print("Changing token and waiting 5 minutes")
+                sleep(5 * 60)
+                print("Trying again")
                 likes = self.get_tweet_likes(tweet.get('id'))
             counter += 1
             total_likes += len(likes)
