@@ -181,6 +181,7 @@ class Twitter():
                 'user.fields': 'name,profile_image_url,username',
                 'pagination_token': next_token,
             }
+            print("tweet likes", len(liking_users))
             response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
             if response.status_code == TOO_MANY_REQUESTS:
                 print("Wait in get_tweet_likes")
@@ -190,19 +191,21 @@ class Twitter():
                 continue
             liking_users += response.json().get('data', [])
             next_token = response.json().get('meta', {}).get("next_token")
+            if not next_token: break
+            time.sleep(5)
         self.update_headers(token_num)
         return liking_users
 
     def get_user_huge_fans(self, username: str) -> list:
         user_id = self.get_user_id_by_user_name(username)
         tweets = self.get_user_tweets(user_id)
-        
+
         liking_users_data = {}
         num_tweets = len(tweets)
         counter = total_likes = 0
         for tweet in tweets:
             print(f"{int(counter / len(tweets) * 100)}% has been processed", tweet.get('id'))
-            if counter % 15 == 14:
+            if counter % 20 == 19:
                 self.update_headers()
                 print("Changing token and waiting 30 seconds")
                 sleep(30)
