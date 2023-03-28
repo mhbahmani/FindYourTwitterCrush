@@ -136,6 +136,7 @@ class Twitter():
         params = {
             'max_results': 100,
             'exclude': 'replies,retweets',
+            'tweet.fields': 'created_at'
         }
         tweets = []
         while True:
@@ -150,7 +151,10 @@ class Twitter():
             print("tweets", len(tweets))
             next_token = response.json().get('meta', {}).get("next_token")
             if not next_token: break
-
+            # Turn str date to datetime
+            last_tweet_create_date = datetime.datetime.strptime(tweets[-1].get('created_at'), "%Y-%m-%dT%H:%M:%S.%fZ")
+            if tweets and last_tweet_create_date < datetime.datetime.now() - datetime.timedelta(days=4 * 365) \
+            or len(tweets) >= 299: break
             params['pagination_token'] = next_token
             time.sleep(5)
         return tweets
