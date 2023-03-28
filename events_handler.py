@@ -28,18 +28,12 @@ def most_liking_users(username: str, tweet_id):
 
     print("Finding most liking users for", username)
     liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
-    names = []
-    for _username, likes in liking_users.items():
-        name = twitter_client.get_user_name_by_username(_username)
-        names.append(name)
-    
-    res = liking_users
+
     items = []
-    l = list(reversed(list(res.items())[-12:]))
-    i = 0
-    for user, val in l:
-        i += 1
-        items.append([val, user, twitter_client.get_user_profile_image(user).replace("_normal", ""), names[-i]])
+
+    liking_users = list(reversed(list(liking_users.items())[-12:]))
+    for _username, data in liking_users:
+        items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
 
     db_client.add_handled_liking({
         "username": username,
@@ -59,6 +53,7 @@ def most_liked_users(username: str, tweet_id):
             print("Tweeted result for", username, "in", cached_path)
             return
 
+    print("Finding most liked users for", username)
     liked_users = twitter_client.get_user_most_liked_users(username)
 
     items = []
@@ -80,9 +75,9 @@ ACTION = "liking_users"
 
 
 if __name__ == "__main__":
-    # username, tweet_id = "mh_bahmani", 1638991765880426499
-    # # most_liking_users(username, tweet_id)
-    # most_liked_users(username, tweet_id)
+    # username, tweet_id = "mh_bahmani", None
+    # most_liking_users(username, tweet_id)
+    # # most_liked_users(username, tweet_id)
     # exit()
 
     print("Starting to handle", ACTION, "events")

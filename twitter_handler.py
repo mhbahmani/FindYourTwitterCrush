@@ -149,6 +149,7 @@ class Twitter():
             print("tweets", len(tweets))
             next_token = response.json().get('meta', {}).get("next_token")
             if not next_token: break
+
             params['pagination_token'] = next_token
             time.sleep(5)
         return tweets
@@ -212,7 +213,7 @@ class Twitter():
                 liking_users_data[like.get('username')] = {
                     'name': like.get('name'),
                     "profile_image_url": self.fix_image_address(like.get('profile_image_url')),
-                    "count": liking_users_data.get(like.get('username'), 0) + 1
+                    "count": liking_users_data.get(like.get('username'), {"count": 0}).get("count", 0) + 1
                 }
             sleep(5)
 
@@ -356,6 +357,6 @@ class Twitter():
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
         
-twitter_client = Twitter()
+# twitter_client = Twitter()
 # print(twitter_client.get_user_most_liked_users("mh_bahmani"))
-print(twitter_client.get_user_huge_fans("mh_bahmani"))
+# print(twitter_client.get_user_huge_fans("mh_bahmani"))
