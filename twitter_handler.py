@@ -123,7 +123,6 @@ class Twitter():
             # if tweet was older than one year
             last_year_date = datetime.datetime.now() - datetime.timedelta(days=365)
             last_year_date = last_year_date.replace(tzinfo=UTC)
-            return likes
             if response.data and response.data[-1].created_at < last_year_date: break
             next_token = response.meta.get("next_token")
             if not next_token: break
@@ -152,12 +151,13 @@ class Twitter():
             if not next_token: break
             params['pagination_token'] = next_token
             time.sleep(5)
-        return response.json().get('data', [])
+        return tweets
 
     def get_tweet_likes(self, tweet_id: str) -> list:
         # print(tweet_id)
         params = {
             'max_results': 100,
+            'user.fields': 'name,profile_image_url,username'
         }
         response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
         if response.status_code == TOO_MANY_REQUESTS:
@@ -186,11 +186,12 @@ class Twitter():
         return liking_users
 
     def get_user_huge_fans(self, username: str) -> list:
-        counter = 0
         user_id = self.get_user_id_by_user_name(username)
         tweets = self.get_user_tweets(user_id)
-        liking_users = {}
-        like_counts = []
+        
+        liking_users_data = {}
+        num_tweets = len(tweets)
+        counter = total_likes = 0
         for tweet in tweets:
             print(f"{int(counter / len(tweets) * 100)}% has been processed", tweet.get('id'))
             if counter % 15 == 14:
@@ -203,17 +204,21 @@ class Twitter():
                 print(e)
                 self.update_headers()
                 sleep(15 * 60)
-                # print(liking_users)
                 likes = self.get_tweet_likes(tweet.get('id'))
             counter += 1
-            like_counts.append(len(likes))
+            total_likes += len(likes)
             # print(counter)
             for like in likes:
-                liking_users[like.get('username')] = liking_users.get(like.get('username'), 0) + 1
+                liking_users_data[like.get('username')] = {
+                    'name': like.get('name'),
+                    "profile_image_url": self.fix_image_address(like.get('profile_image_url')),
+                    "count": liking_users_data.get(like.get('username'), 0) + 1
+                }
             sleep(5)
-        res = dict(sorted(liking_users.items(), key=lambda x: x[1])[-12:]), sum(like_counts) / len(like_counts)
+
+        most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"))[-12:]), total_likes / num_tweets
         # print(res)
-        return res
+        return most_liking_users
 
     def update_headers(self, token_num=-1) -> None:
         prev_tok = self.token_number
@@ -351,6 +356,6 @@ class Twitter():
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
         
-# twitter_client = Twitter()
+twitter_client = Twitter()
 # print(twitter_client.get_user_most_liked_users("mh_bahmani"))
-# print(twitter_client.get_user_huge_fans("mh_bahmani"))
+print(twitter_client.get_user_huge_fans("mh_bahmani"))
