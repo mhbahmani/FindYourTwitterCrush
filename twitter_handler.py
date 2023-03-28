@@ -123,6 +123,7 @@ class Twitter():
             # if tweet was older than one year
             last_year_date = datetime.datetime.now() - datetime.timedelta(days=365)
             last_year_date = last_year_date.replace(tzinfo=UTC)
+            return likes
             if response.data and response.data[-1].created_at < last_year_date: break
             next_token = response.meta.get("next_token")
             if not next_token: break
@@ -238,24 +239,18 @@ class Twitter():
         user_id = self.get_user_id_by_user_name(username)
         liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id)]
         users_data = {}
-        i = 0
-        # Pass 100 user ids each time to get_username_by_user_id_list
-        # count each user id
-        count_each_user_id = Counter(liked_user_ids)
-        liked_user_ids = list(set(liked_user_ids))
-        while i < len(liked_user_ids):
-            if i + 100 >= len(liked_user_ids):
-                liked_users_object = self.get_users_by_user_id_list(liked_user_ids[i:])
-            else:
-                liked_users_object = self.get_users_by_user_id_list(liked_user_ids[i:i + 100])
-            for user in liked_users_object:
-                users_data[user.screen_name] = {
-                    "name": user.name,
-                    "profile_image_url": self.fix_image_address(user.profile_image_url_https),
-                    "count": count_each_user_id.get(user.id, 0),
-                }
-            i += 100
-        return dict(sorted(users_data.items(), key=lambda x: x[1].get("count", 0))[-12:])
+
+        user_id_count = dict(Counter(liked_user_ids))
+        most_liked_users_ids = dict(sorted(user_id_count.items(), key=lambda x: x[1])[-12:])
+        liked_users_object = self.get_users_by_user_id_list(most_liked_users_ids)
+        for user in liked_users_object:
+            users_data[user.screen_name] = {
+                "name": user.name,
+                "profile_image_url": self.fix_image_address(user.profile_image_url_https),
+                "count": user_id_count.get(user.id, 0),
+            }
+
+        return users_data
 
     def tweet_result(self, image_path: str, tweet_id: str):
         media = self.bot_api.media_upload(image_path)
