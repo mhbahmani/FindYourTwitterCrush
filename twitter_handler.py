@@ -143,7 +143,8 @@ class Twitter():
             if response.status_code == TOO_MANY_REQUESTS:
                 print("Wait in get_user_tweets")
                 self.update_headers()
-                time.sleep(10 * 60)
+                time.sleep(5 * 60)
+                print("Retry in get_user_tweets")
                 continue
             tweets += response.json().get('data', [])
             print("tweets", len(tweets))
