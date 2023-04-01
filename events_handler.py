@@ -54,15 +54,16 @@ def most_liked_users(username: str, tweet_id):
             return
 
     print("Finding most liked users for", username)
-    liked_users = twitter_client.get_user_most_liked_users(username)
+    liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
 
     items = []
     liked_users = list(reversed(list(liked_users.items())[-12:]))
     for _username, data in liked_users:
         items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
 
-    image_path = merge_images(items, username=username)
-    twitter_client.tweet_result(image_path, tweet_id)
+    image_path = merge_images(items, username=username, total_likes=total_likes)
+    if tweet_id != "":
+        twitter_client.tweet_result(image_path, tweet_id)
     db_client.add_handled_liked({
         "username": username,
         "result": items
@@ -70,8 +71,8 @@ def most_liked_users(username: str, tweet_id):
     print("Tweeted result for", username, "in", image_path)
     
 
-ACTION = "liking_users"
-# ACTION = "liked_users"
+# ACTION = "liking_users"
+ACTION = "liked_users"
 
 
 if __name__ == "__main__":
