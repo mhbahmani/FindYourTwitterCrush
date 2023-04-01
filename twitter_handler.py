@@ -118,7 +118,7 @@ class Twitter():
             except Exception as e:
                 print(e)
                 self.update_client()
-                # time.sleep(30)
+                time.sleep(10)
                 continue
             if response.data: likes += response.data
             print("likes", len(likes))
@@ -130,7 +130,7 @@ class Twitter():
                 next_token = response.meta.get("next_token")
                 if not next_token: break
             else: break 
-            time.sleep(5)
+            time.sleep(4)
         return likes
 
     def get_user_tweets(self, user_id: str) -> list:
