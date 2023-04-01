@@ -118,7 +118,7 @@ class Twitter():
             except Exception as e:
                 print(e)
                 self.update_client()
-                time.sleep(30)
+                # time.sleep(30)
                 continue
             if response.data: likes += response.data
             print("likes", len(likes))
