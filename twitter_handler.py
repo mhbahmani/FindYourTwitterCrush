@@ -277,8 +277,12 @@ class Twitter():
         return users_data, total_likes
 
     def tweet_result(self, image_path: str, tweet_id: str):
-        media = self.bot_api.media_upload(image_path)
-        self.bot_api.update_status(status=self.generate_result_tweet_text(), media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
+        try:
+            media = self.bot_api.media_upload(image_path)
+            self.bot_api.update_status(status=self.generate_result_tweet_text(), media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
+        except Exception as e:
+            print("Something went wrong on tweeting the results", image_path, tweet_id)
+            print(e)
 
     def fix_image_address(self, image_link) -> str:
         # remove _normal.jpg from image like
