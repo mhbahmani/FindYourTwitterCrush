@@ -117,7 +117,7 @@ class Twitter():
             except Exception as e:
                 print(e)
                 self.update_client()
-                time.sleep(5 * 60)
+                time.sleep(30)
                 continue
             if response.data: likes += response.data
             print("likes", len(likes))
@@ -130,8 +130,6 @@ class Twitter():
                 if not next_token: break
             else: break 
             time.sleep(5)
-            if counter % 10 == 9: time.sleep(30)
-            counter += 1
         return likes
 
     def get_user_tweets(self, user_id: str) -> list:
@@ -262,8 +260,9 @@ class Twitter():
     def get_user_most_liked_users(self, username: str) -> list:
         user_id = self.get_user_id_by_user_name(username)
         liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id)]
-        users_data = {}
+        total_likes = len(liked_user_ids)
 
+        users_data = {}
         user_id_count = dict(Counter(liked_user_ids))
         most_liked_users_ids = dict(sorted(user_id_count.items(), key=lambda x: x[1])[-12:])
         liked_users_object = self.get_users_by_user_id_list(most_liked_users_ids)
@@ -274,7 +273,7 @@ class Twitter():
                 "count": user_id_count.get(user.id, 0),
             }
 
-        return users_data
+        return users_data, total_likes
 
     def tweet_result(self, image_path: str, tweet_id: str):
         media = self.bot_api.media_upload(image_path)
