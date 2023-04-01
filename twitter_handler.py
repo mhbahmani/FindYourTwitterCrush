@@ -105,7 +105,7 @@ class Twitter():
     def get_tweet_author_username(self, tweet_id: str) -> str:
         return self.tweepy_api.get_status(tweet_id).user.screen_name
 
-    def get_user_likes(self, user_id) -> list:
+    def get_user_likes(self, user_id, username: str = None) -> list:
         likes = []
         next_token = None
         counter = 0
@@ -121,7 +121,7 @@ class Twitter():
                 time.sleep(10)
                 continue
             if response.data: likes += response.data
-            print("likes", len(likes))
+            print("likes", len(likes), username)
             # if tweet was older than one year
             last_year_date = datetime.datetime.now() - datetime.timedelta(days=365)
             last_year_date = last_year_date.replace(tzinfo=UTC)
@@ -260,7 +260,7 @@ class Twitter():
 
     def get_user_most_liked_users(self, username: str) -> list:
         user_id = self.get_user_id_by_user_name(username)
-        liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id)]
+        liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id, username=username)]
         total_likes = len(liked_user_ids)
 
         users_data = {}
