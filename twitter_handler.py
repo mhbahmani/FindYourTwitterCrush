@@ -59,6 +59,7 @@ class Twitter():
         self.get_bot_token()
     
     def get_tweet_repliers(self, tweet_id: int, tweet_author: str = None, checked: set = set()) -> list:
+        print("hhhh")
         if tweet_author and tweet_author in checked:
             return
         if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
