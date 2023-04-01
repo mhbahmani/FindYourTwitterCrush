@@ -107,6 +107,7 @@ class Twitter():
     def get_user_likes(self, user_id) -> list:
         likes = []
         next_token = None
+        counter = 0
         while True:
             try:
                 response = self.client.get_liked_tweets(
@@ -127,8 +128,10 @@ class Twitter():
             if response.meta: 
                 next_token = response.meta.get("next_token")
                 if not next_token: break
-            else: break
+            else: break 
             time.sleep(5)
+            if counter % 10 == 9: time.sleep(30)
+            counter += 1
         return likes
 
     def get_user_tweets(self, user_id: str) -> list:
