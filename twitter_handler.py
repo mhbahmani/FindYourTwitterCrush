@@ -118,14 +118,16 @@ class Twitter():
                 self.update_client()
                 time.sleep(5 * 60)
                 continue
-            likes += response.data
+            if response.data: likes += response.data
             print("likes", len(likes))
             # if tweet was older than one year
             last_year_date = datetime.datetime.now() - datetime.timedelta(days=365)
             last_year_date = last_year_date.replace(tzinfo=UTC)
             if response.data and response.data[-1].created_at < last_year_date: break
-            next_token = response.meta.get("next_token")
-            if not next_token: break
+            if response.meta: 
+                next_token = response.meta.get("next_token")
+                if not next_token: break
+            else: break
             time.sleep(5)
         return likes
 
