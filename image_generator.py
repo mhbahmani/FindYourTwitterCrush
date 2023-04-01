@@ -20,7 +20,7 @@ IMAGE_X = 426
 IMAGE_Y = 420
 
 
-def merge_images(data: list, avg: float = -1, username: str = None):
+def merge_images(data: list, avg: float = -1, username: str = None, total_likes: int = -1):
     TOTAL_IMAGES = len(data)
 
     TITLE_LINE_LENGTH = 120
@@ -49,8 +49,8 @@ def merge_images(data: list, avg: float = -1, username: str = None):
 
     X = int(TOTAL_IMAGES/NUM_ROWS) * images_size[0] + IMAGE_BORDER + PROFILE_IMAGES_DISTANCE_X
     Y = NUM_ROWS * images_size[1] + IMAGE_BORDER + TITLE_LINE_LENGTH
-    if avg != -1: Y += 100
-    
+    Y += 100 # for average and total likes  
+
     merged_image = Image.new('RGB',(X, Y), (250,250,250))
     title = MOST_LIKING_USERS_TITLE if avg != -1 else MOST_LIKED_USERS_TITLE
     font = ImageFont.truetype("kamran.ttf", 70)
@@ -81,10 +81,12 @@ def merge_images(data: list, avg: float = -1, username: str = None):
         except:
             image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(data[i][3]) / 2 * 25), images_location[i][1] + 480), f"{data[i][3]}", fill=(0,0,0), font=en_font)
 
+    font = ImageFont.truetype("baloo.ttf", 60)
     if avg != -1:
-        font = ImageFont.truetype("baloo.ttf", 60)
         # Write average score in the buttom middle of the image
         image_draw.text((X/2 - 100, Y - 100), f"Average: {avg}", fill=(0,0,0), font=font)
+    if total_likes != -1: 
+        image_draw.text((X/2 - 100, Y - 100), f"Total likes: {total_likes}", fill=(0,0,0), font=font)
 
     if avg != -1:
         output_path = f"{OUTPUT_DIR}/{username}-liking.jpg"
