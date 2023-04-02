@@ -28,7 +28,7 @@ class Redis:
                 return username, tweet_id, "d"
         
     def get_all_progressing_events(self, queue: str) -> list:
-        return list(self.client.lrange(f"{queue}-progressing", 0, -1))
+        return [user.decode("utf-8") for user in list(self.client.lrange(f"{queue}-progressing", 0, -1))]
 
     def get_all_in_liking_queue(self):
         return [user.decode("utf-8").split("####")[0] for user in list(self.client.lrange("liking_users", 0, -1))]
