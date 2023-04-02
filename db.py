@@ -30,12 +30,8 @@ class DB:
         self.db.liked.insert_one(user)
     
     def get_all_handled_liking(self) -> list:
-        out = [user.get("username") for user in list(self.db.liking.find({}, {"username": 1, "_id": 0}))]
-        print(out)
-        return out
-    
-
+        return [user.get("username") for user in list(self.db.liking.find({}, {"username": 1, "_id": 0}))]
+        
     def get_all_handled_liked(self) -> list:
-        out = [user.get("username") for user in list(self.db.liked.find({}, {"username": 1, "_id": 0}))]
-        print(out)
-        return out
+        return [user.get("username") for user in list(self.db.liked.find({}, {"username": 1, "_id": 0}))]
+        
