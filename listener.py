@@ -37,6 +37,12 @@ def check_for_new_requests_on_most_liking():
         print("Adding", replier, "to queue liking_users")
         redis_client.add_event_to_queue(replier, queue="liking_users")
         handled_users_liking.add(replier[0])
+    direct_requests = client.get_directs_usernames()
+    for request in direct_requests:
+        if request['username'] in handled_users_liking: continue
+        print("Adding", request, "to queue", "liking_users")
+        redis_client.add_event_to_queue(request, queue="liking_users")
+        handled_users_liking.add(request['username'])
 
 def check_for_new_requests_on_likes():
     all_progressings = redis_client.get_all_progressing_events("liked_users")
@@ -46,10 +52,15 @@ def check_for_new_requests_on_likes():
         print("Adding", replier, "to queue liked_users")
         redis_client.add_event_to_queue(replier, queue="liked_users")
         handled_users_liked.add(replier[0])
-
+    direct_requests = client.get_directs_usernames()
+    for request in direct_requests:
+        if request['username'] in handled_users_liked: continue
+        print("Adding", request, "to queue", "liked_users")
+        redis_client.add_event_to_queue([request['username'], str(request['user_id']), "d"], queue="liked_users")
+        handled_users_liked.add(request['username'])
 
 load_handled_users()
 while True:
-    check_for_new_requests_on_most_liking()
+    # check_for_new_requests_on_most_liking()
     check_for_new_requests_on_likes()
     time.sleep(30)
