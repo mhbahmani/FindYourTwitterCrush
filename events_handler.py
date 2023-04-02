@@ -27,9 +27,10 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
                 if not user_id:
                     user_id = twitter_client.get_user_id_by_user_name(username)
                 twitter_client.send_result_in_direct(cached_path, user_id)
+                print("Send result in direct for", username, "in", cached_path)
             else:
                 twitter_client.tweet_result(cached_path, tweet_id)
-            print("Tweeted result for", username, "in", cached_path)
+                print("Tweeted result for", username, "in", cached_path)
             return
 
     print("Finding most liking users for", username)
@@ -51,9 +52,10 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
         if not user_id:
             user_id = twitter_client.get_user_id_by_user_name(username)
         twitter_client.send_result_in_direct(image_path, user_id)
+        print("Send result in direct for", username, "in", image_path)
     else:
         twitter_client.tweet_result(image_path, tweet_id)
-    print("Tweeted result for", username, "in", image_path)
+        print("Tweeted result for", username, "in", image_path)
     
 
 def most_liked_users(username: str, tweet_id, type: str = "t"):
