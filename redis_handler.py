@@ -10,7 +10,7 @@ class Redis:
             db=0)
 
     def add_event_to_queue(self, event: str, queue: str = "liking_users") -> None:
-        self.client.rpush(queue, f"{event[0]}####{event[1]}")
+        self.client.rpush(queue, "####".join(event))
 
     def add_username_to_progressing(self, username: str, queue: str) -> None:
         self.client.rpush(queue, username)
@@ -19,9 +19,13 @@ class Redis:
         event = self.client.lpop(queue)
         if event:
             event = event.decode("utf-8")
-            username, tweet_id = event.split("####")
-            return username, tweet_id
-
+            splited_event = event.split("####")
+            if len(splited_event) == 2 or splited_event[-1] == "t":
+                username, tweet_id = splited_event[0], splited_event[1]
+                return username, tweet_id, "t"
+            elif len(splited_event) == 3 and splited_event[-1] == "d":
+                username, tweet_id, _ = splited_event
+                return username, tweet_id, "d"
         
     def get_all_progressing_events(self, queue: str) -> list:
         return list(self.client.lrange(f"{queue}-progressing", 0, -1))
