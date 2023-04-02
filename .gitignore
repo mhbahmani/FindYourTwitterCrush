@@ -175,3 +175,4 @@ poetry.toml
 *images
 bot_tokens.txt
 oauth_tokens.txt
+direct_tokens.txt
