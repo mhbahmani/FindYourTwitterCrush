@@ -62,6 +62,7 @@ class Twitter():
         # self.get_direct_api()
     
     def get_tweet_repliers(self, tweet_id: int, tweet_author: str = None, checked: set = set()) -> list:
+        # ! deprecated !
         if tweet_author and tweet_author in checked:
             return
         if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
@@ -91,6 +92,19 @@ class Twitter():
 
             if len(replies) != 100:
                 break
+
+    def get_tweet_replies_with_tweepy(self, tweet_id: int, tweet_author: str = None) -> list:
+        if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
+        repliers = []
+        try:
+            tweets = tweepy.Cursor(self.bot_api.search_tweets, q=f"to:{tweet_author}", since_id=tweet_id, count=100).items(1000)
+            for tweet in tweets:
+                if tweet.in_reply_to_status_id == tweet_id:
+                    repliers.append((tweet.user.screen_name, tweet.id_str))
+            return repliers
+        except Exception as e:
+            print(e)
+            time.sleep(15 * 60)
 
     def get_user_id_by_user_name(self, username: str) -> str:
         response = requests.get(f"https://api.twitter.com/2/users/by/username/{username}", headers=self.headers)
@@ -395,7 +409,12 @@ class Twitter():
         
     def get_user_directs_sender_ids(self) -> dict:
         sender_ids = {}
-        msgs = self.bot_api.get_direct_messages()
+        try:
+            msgs = self.bot_api.get_direct_messages()
+        except Exception as e:
+            print(e)
+            print("Wait in get directs")
+            time.sleep(5 * 60)
         for msg in msgs:
             sender_ids[msg.message_create['sender_id']] = msg.id
         return sender_ids

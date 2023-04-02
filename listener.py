@@ -31,7 +31,7 @@ def load_handled_users():
 
 def check_for_new_requests_on_most_liking():
     all_progressings = redis_client.get_all_progressing_events("liking_users")
-    repliers = client.get_tweet_repliers(LIKING_USERS_SRC_TWEET_ID)
+    repliers = client.get_tweet_replies_with_tweepy(LIKING_USERS_SRC_TWEET_ID)
     for replier in repliers:
         if replier[0] in handled_users_liking or replier[0] in all_progressings: continue
         print("Adding", replier, "to queue liking_users")
@@ -46,7 +46,7 @@ def check_for_new_requests_on_most_liking():
 
 def check_for_new_requests_on_likes():
     all_progressings = redis_client.get_all_progressing_events("liked_users")
-    repliers = client.get_tweet_repliers(LIKES_SRC_TWEET_ID)
+    repliers = client.get_tweet_replies_with_tweepy(LIKES_SRC_TWEET_ID)
     for replier in repliers:
         if replier[0] in handled_users_liked or replier[0] in all_progressings: continue
         print("Adding", replier, "to queue liked_users")
@@ -63,4 +63,4 @@ load_handled_users()
 while True:
     # check_for_new_requests_on_most_liking()
     check_for_new_requests_on_likes()
-    time.sleep(30)
+    time.sleep(5 * 60)
