@@ -410,7 +410,7 @@ class Twitter():
     def get_user_directs_sender_ids(self) -> dict:
         sender_ids = {}
         try:
-            msgs = self.bot_api.get_direct_messages()
+            msgs = self.bot_api.get_direct_messages(count=100)
         except Exception as e:
             print(e)
             print("Wait in get directs")
