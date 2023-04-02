@@ -32,7 +32,7 @@ class Twitter():
         auth = tweepy.OAuth1UserHandler(
         API_KEY, API_KEY_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
         )
-        self.tweepy_api = tweepy.API(auth, wait_on_rate_limit=True)
+        self.tweepy_api = tweepy.API(auth)
 
         self.clients = [tweepy.Client(token) for token in self.bearer_tokens]
         self.client_number = 0
@@ -57,9 +57,11 @@ class Twitter():
 
         self.bot_api = None
         self.get_bot_token()
+
+        # self.direct_api = None
+        # self.get_direct_api()
     
     def get_tweet_repliers(self, tweet_id: int, tweet_author: str = None, checked: set = set()) -> list:
-        print("hhhh")
         if tweet_author and tweet_author in checked:
             return
         if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
@@ -284,9 +286,36 @@ class Twitter():
             print("Something went wrong on tweeting the results", image_path, tweet_id)
             print(e)
 
+    def send_result_in_direct(self, image_path: str, user_id: str):
+        try:
+            media = self.bot_api.media_upload(image_path)
+            self.bot_api.send_direct_message(
+                recipient_id=user_id,
+                text=self.generate_result_tweet_text(),
+                attachment_type="media",
+                attachment_media_id=media.media_id)
+        except Exception as e:
+            print("Something went wrong on sending the results in direct", image_path, user_id)
+            print(e)
+
     def fix_image_address(self, image_link) -> str:
         # remove _normal.jpg from image like
         return image_link.replace("_normal.jpg", ".jpg")
+
+    def get_direct_api(self):
+        # if token file exists, load tokens from it
+        tokens_file_path = "direct_tokens.txt"
+        tokens = None
+        if os.path.exists(tokens_file_path):
+            with open(tokens_file_path, "r") as f:
+                tokens = f.read()
+        access_token, access_token_secret = tokens.split()
+
+        auth = tweepy.OAuth1UserHandler(
+            config("APP_API_KEY"), config("APP_API_KEY_SECRET"),
+            access_token, access_token_secret
+        )
+        self.direct_api = tweepy.API(auth)
 
     def get_bot_token(self):
         # if token file exists, load tokens from it
@@ -345,15 +374,15 @@ class Twitter():
         )
         self.bot_api = tweepy.API(auth)
         # Generate random text and send it to twitter
-        import random, string
-        text = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        try:
-            self.bot_api.update_status(text)
-        except Exception as e:
-            print(e)
-            if os.path.exists(tokens_file_path):
-                os.remove(tokens_file_path)
-                self.get_bot_token()
+        # import random, string
+        # text = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
+        # try:
+        #     self.bot_api.update_status(text)
+        # except Exception as e:
+        #     print(e)
+        #     if os.path.exists(tokens_file_path):
+        #         os.remove(tokens_file_path)
+        #         self.get_bot_token()
 
     def save_bot_tokens(self, access_token: str, access_token_secret: str):
         tokens_file_path = "bot_tokens.txt"
@@ -364,6 +393,26 @@ class Twitter():
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
         
+    def get_user_directs_sender_ids(self) -> dict:
+        sender_ids = {}
+        msgs = self.bot_api.get_direct_messages()
+        for msg in msgs:
+            sender_ids[msg.message_create['sender_id']] = msg.id
+        return sender_ids
+    
+    def get_directs_usernames(self) -> list:
+        direct_requests = []
+        sender_ids = self.get_user_directs_sender_ids()
+        # loopup users
+        users = self.get_users_by_user_id_list(sender_ids.keys())
+        for user in users:
+            direct_requests.append({
+                "username": user.screen_name,
+                "user_id": user.id 
+            })
+        return direct_requests
+
 # twitter_client = Twitter()
+# twitter_client.get_directs_usernames()
 # print(twitter_client.get_user_most_liked_users("mh_bahmani"))
 # print(twitter_client.get_user_huge_fans("mh_bahmani"))
