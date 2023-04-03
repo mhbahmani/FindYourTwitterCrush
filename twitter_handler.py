@@ -271,8 +271,7 @@ class Twitter():
         self.client = self.clients[self.client_number % len(self.clients)]
 
     def get_users_by_user_id_list(self, user_ids: list) -> str:
-        users = self.tweepy_api.lookup_users(user_id=user_ids, include_entities=False)
-        return users
+        return self.tweepy_api.lookup_users(user_id=user_ids, include_entities=False)
 
     def get_user_most_liked_users(self, username: str) -> list:
         user_id = self.get_user_id_by_user_name(username)
@@ -282,6 +281,7 @@ class Twitter():
         users_data = {}
         user_id_count = dict(Counter(liked_user_ids))
         most_liked_users_ids = dict(sorted(user_id_count.items(), key=lambda x: x[1])[-12:])
+        liked_users_object = []
         liked_users_object = self.get_users_by_user_id_list(most_liked_users_ids)
         for user in liked_users_object:
             users_data[user.screen_name] = {
@@ -409,26 +409,34 @@ class Twitter():
         
     def get_user_directs_sender_ids(self) -> dict:
         sender_ids = {}
+        # Get messages with cursor
+        # msgs = self.bot_api.get_direct_messages(count=100)
+        msg_pages = tweepy.Cursor(self.bot_api.get_direct_messages).pages(5)
         try:
-            msgs = self.bot_api.get_direct_messages(count=100)
+            for page in msg_pages:
+                for msg in page:
+                    time.sleep(0.1)
+                    sender_ids[msg.message_create['sender_id']] = msg.id
         except Exception as e:
             print(e)
             print("Wait in get directs")
             time.sleep(5 * 60)
-        for msg in msgs:
-            sender_ids[msg.message_create['sender_id']] = msg.id
         return sender_ids
     
     def get_directs_usernames(self) -> list:
         direct_requests = []
         sender_ids = self.get_user_directs_sender_ids()
-        # loopup users
-        users = self.get_users_by_user_id_list(sender_ids.keys())
-        for user in users:
-            direct_requests.append({
-                "username": user.screen_name,
-                "user_id": user.id 
-            })
+        # lookup users in 100 user chunks
+        i = 0
+        while i < len(sender_ids):
+            users = self.get_users_by_user_id_list(list(sender_ids.keys())[i:i+100])
+            for user in users:
+                direct_requests.append({
+                    "username": user.screen_name,
+                    "user_id": user.id
+                })
+            i += 100
+            time.sleep(1)
         return direct_requests
 
 # twitter_client = Twitter()

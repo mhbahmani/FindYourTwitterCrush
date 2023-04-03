@@ -63,4 +63,4 @@ load_handled_users()
 while True:
     # check_for_new_requests_on_most_liking()
     check_for_new_requests_on_likes()
-    time.sleep(5 * 60)
+    time.sleep(10 * 60)

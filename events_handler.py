@@ -75,7 +75,12 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
             return
 
     print("Finding most liked users for", username)
-    liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
+    try:
+        liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
+    except Exception as e:
+        print(e)
+        print(username, tweet_id)
+        return
 
     items = []
     liked_users = list(reversed(list(liked_users.items())[-12:]))
