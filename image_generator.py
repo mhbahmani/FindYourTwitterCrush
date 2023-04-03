@@ -104,9 +104,15 @@ def download_image(images: list):
     key = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
     counter = 0
     for image in images:
-        response = requests.get(image)
+        try:
+            response = requests.get(image)
+            content = response.content
+        except Exception as e:
+            print(e)
+            print("Using default image as profile image, image liks:", image)
+            content = open("templates/default-profile-image.jpg", "rb").read()
         with open(f"images/{key}-{counter}.jpg", "wb") as f:
-            f.write(response.content)
+            f.write(content)
         counter += 1
     return key
 
