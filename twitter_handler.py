@@ -105,6 +105,7 @@ class Twitter():
         except Exception as e:
             print(e)
             time.sleep(15 * 60)
+            return self.get_tweet_replies_with_tweepy(tweet_id, tweet_author)
 
     def get_user_id_by_user_name(self, username: str) -> str:
         response = requests.get(f"https://api.twitter.com/2/users/by/username/{username}", headers=self.headers)
