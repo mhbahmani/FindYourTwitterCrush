@@ -207,7 +207,7 @@ class Twitter():
             if response.status_code == TOO_MANY_REQUESTS:
                 print("Wait in get_tweet_likes")
                 self.update_headers()
-                sleep(5 * 60)
+                # sleep(5 * 60)
                 print("Retrying")
                 continue
             liking_users += response.json().get('data', [])
@@ -225,11 +225,11 @@ class Twitter():
         num_tweets = len(tweets)
         counter = total_likes = 0
         for tweet in tweets:
-            print(f"{int(counter / len(tweets) * 100)}% has been processed", tweet.get('id'))
-            if counter % 20 == 19:
-                self.update_headers()
-                print("Changing token and waiting 30 seconds")
-                sleep(30)
+            print(f"{int(counter / len(tweets) * 100)}% has been processed", tweet.get('id'), username)
+            # if counter % 20 == 19:
+            #     self.update_headers()
+            #     print("Changing token and waiting 30 seconds")
+            #     sleep(30)
             while True:
                 try:
                     likes = self.get_tweet_likes(tweet.get('id'))
@@ -238,7 +238,7 @@ class Twitter():
                     print(e)
                     self.update_headers()
                     print("Changing token and waiting 5 minutes")
-                    sleep(5 * 60)
+                    # sleep(5 * 60)
                     print("Trying again")
             counter += 1
             total_likes += len(likes)
@@ -249,7 +249,7 @@ class Twitter():
                     "profile_image_url": self.fix_image_address(like.get('profile_image_url')),
                     "count": liking_users_data.get(like.get('username'), {"count": 0}).get("count", 0) + 1
                 }
-            sleep(5)
+            sleep(3)
 
         most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"))[-12:]), total_likes / num_tweets
         # print(res)
