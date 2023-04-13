@@ -239,7 +239,7 @@ class Twitter():
                     logging.error(e)
                     self.update_headers()
                     logging.info("Changing token and waiting 5 minutes")
-                    # sleep(5 * 60)
+                    sleep(30)
                     logging.info("Trying again")
             counter += 1
             total_likes += len(likes)
