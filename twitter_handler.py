@@ -7,6 +7,7 @@ from messages import RESULT_TWEET_TEXTS
 
 import requests
 import datetime
+import logging
 import tweepy
 import twitter
 import random
@@ -103,7 +104,7 @@ class Twitter():
                     repliers.append((tweet.user.screen_name, tweet.id_str))
             return repliers
         except Exception as e:
-            print(e)
+            logging.error(e)
             time.sleep(15 * 60)
             return self.get_tweet_replies_with_tweepy(tweet_id, tweet_author)
 
@@ -133,12 +134,12 @@ class Twitter():
                     pagination_token=next_token,
                     tweet_fields=["created_at", "author_id"])
             except Exception as e:
-                print(e)
+                logging.error(e)
                 self.update_client()
                 time.sleep(10)
                 continue
             if response.data: likes += response.data
-            print("likes", len(likes), username)
+            logging.info(f"likes {len(likes)} {username}")
             # if tweet was older than one year
             last_year_date = datetime.datetime.now() - datetime.timedelta(days=365)
             last_year_date = last_year_date.replace(tzinfo=UTC)
@@ -146,7 +147,7 @@ class Twitter():
             if response.meta: 
                 next_token = response.meta.get("next_token")
                 if not next_token: break
-            else: break 
+            else: break
             time.sleep(4)
         return likes
 
@@ -163,13 +164,13 @@ class Twitter():
         while True:
             response = requests.get(f'https://api.twitter.com/2/users/{user_id}/tweets', headers=self.headers, params=params)
             if response.status_code == TOO_MANY_REQUESTS:
-                print("Wait in get_user_tweets")
+                logging.info("Wait in get_user_tweets")
                 self.update_headers()
                 time.sleep(5 * 60)
-                print("Retry in get_user_tweets")
+                logging.info("Retry in get_user_tweets")
                 continue
             tweets += response.json().get('data', [])
-            print("tweets", len(tweets))
+            logging.info(f"tweets {len(tweets)}")
             next_token = response.json().get('meta', {}).get("next_token")
             if not next_token: break
             # Turn str date to datetime
@@ -181,7 +182,7 @@ class Twitter():
         return tweets
 
     def get_tweet_likes(self, tweet_id: str) -> list:
-        # print(tweet_id)
+        # logging.info(tweet_id)
         params = {
             'max_results': 100,
             'user.fields': 'name,profile_image_url,username'
@@ -202,13 +203,13 @@ class Twitter():
                 'user.fields': 'name,profile_image_url,username',
                 'pagination_token': next_token,
             }
-            print("tweet likes", len(liking_users))
+            logging.info(f"tweet likes {len(liking_users)}")
             response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
             if response.status_code == TOO_MANY_REQUESTS:
-                print("Wait in get_tweet_likes")
+                logging.info("Wait in get_tweet_likes")
                 self.update_headers()
                 # sleep(5 * 60)
-                print("Retrying")
+                logging.info("Retrying")
                 continue
             liking_users += response.json().get('data', [])
             next_token = response.json().get('meta', {}).get("next_token")
@@ -225,24 +226,24 @@ class Twitter():
         num_tweets = len(tweets)
         counter = total_likes = 0
         for tweet in tweets:
-            print(f"{int(counter / len(tweets) * 100)}% has been processed", tweet.get('id'), username)
+            logging.info(f"{int(counter / len(tweets) * 100)}% has been processed {tweet.get('id')} {username}")
             # if counter % 20 == 19:
             #     self.update_headers()
-            #     print("Changing token and waiting 30 seconds")
+            #     logging.info("Changing token and waiting 30 seconds")
             #     sleep(30)
             while True:
                 try:
                     likes = self.get_tweet_likes(tweet.get('id'))
                     break
                 except Exception as e:
-                    print(e)
+                    logging.error(e)
                     self.update_headers()
-                    print("Changing token and waiting 5 minutes")
+                    logging.info("Changing token and waiting 5 minutes")
                     # sleep(5 * 60)
-                    print("Trying again")
+                    logging.info("Trying again")
             counter += 1
             total_likes += len(likes)
-            # print(counter)
+            # logging.info(counter)
             for like in likes:
                 liking_users_data[like.get('username')] = {
                     'name': like.get('name'),
@@ -252,7 +253,7 @@ class Twitter():
             sleep(3)
 
         most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"))[-12:]), total_likes / num_tweets
-        # print(res)
+        # logging.info(res)
         return most_liking_users
 
     def update_headers(self, token_num=-1) -> None:
@@ -265,7 +266,7 @@ class Twitter():
         self.headers = {
             'Authorization': f"Bearer {self.bearer_tokens[self.token_number]}"
         }
-        # print(f"Token updated from {prev_tok} to {self.token_number}")
+        # logging.info(f"Token updated from {prev_tok} to {self.token_number}")
 
     def update_client(self) -> None:
         self.client_number += 1
@@ -298,8 +299,8 @@ class Twitter():
             media = self.bot_api.media_upload(image_path)
             self.bot_api.update_status(status=self.generate_result_tweet_text(), media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
         except Exception as e:
-            print("Something went wrong on tweeting the results", image_path, tweet_id)
-            print(e)
+            logging.error(f"Something went wrong on tweeting the results {image_path} {tweet_id}")
+            logging.error(e)
 
     def send_result_in_direct(self, image_path: str, user_id: str):
         try:
@@ -310,8 +311,8 @@ class Twitter():
                 attachment_type="media",
                 attachment_media_id=media.media_id)
         except Exception as e:
-            print("Something went wrong on sending the results in direct", image_path, user_id)
-            print(e)
+            logging.error(f"Something went wrong on sending the results in direct {image_path} {user_id}")
+            logging.error(e)
 
     def fix_image_address(self, image_link) -> str:
         # remove _normal.jpg from image like
@@ -394,7 +395,7 @@ class Twitter():
         # try:
         #     self.bot_api.update_status(text)
         # except Exception as e:
-        #     print(e)
+        #     logging.error(e)
         #     if os.path.exists(tokens_file_path):
         #         os.remove(tokens_file_path)
         #         self.get_bot_token()
@@ -419,8 +420,8 @@ class Twitter():
                     time.sleep(0.1)
                     sender_ids[msg.message_create['sender_id']] = msg.id
         except Exception as e:
-            print(e)
-            print("Wait in get directs")
+            logging.error(e)
+            logging.info("Wait in get directs")
             time.sleep(5 * 60)
         return sender_ids
     

@@ -7,6 +7,18 @@ from decouple import config
 from db import DB
 
 import time
+import logging
+
+
+logging.basicConfig(
+    filename="events_handler.log",
+    filemode="a",
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level={
+        'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG,
+        'ERROR': logging.ERROR,
+    }[config("LOG_LEVEL", default="INFO")])
 
 
 db_client = DB()
@@ -21,19 +33,19 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
     if CHECK_IMAGE_CACHE:
         cached_path = retrieve_image_path(username, "liking")
         if cached_path:
-            print("Found cached image for", username, "in", cached_path)
+            logging.info(f"Found cached image for {username} in {cached_path}")
             if type == "d":
                 user_id = tweet_id
                 if not user_id:
                     user_id = twitter_client.get_user_id_by_user_name(username)
                 twitter_client.send_result_in_direct(cached_path, user_id)
-                print("Send result in direct for", username, "in", cached_path)
+                logging.info(f"Send result in direct for {username} in {cached_path}")
             else:
                 twitter_client.tweet_result(cached_path, tweet_id)
-                print("Tweeted result for", username, "in", cached_path)
+                logging.info(f"Tweeted result for {username} in {cached_path}")
             return
 
-    print("Finding most liking users for", username)
+    logging.info(f"Finding most liking users for {username}")
     liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
 
     items = []
@@ -52,34 +64,34 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
         if not user_id:
             user_id = twitter_client.get_user_id_by_user_name(username)
         twitter_client.send_result_in_direct(image_path, user_id)
-        print("Send result in direct for", username, "in", image_path)
+        logging.info(f"Send result in direct for {username} in {image_path}")
     else:
         twitter_client.tweet_result(image_path, tweet_id)
-        print("Tweeted result for", username, "in", image_path)
+        logging.info(f"Tweeted result for {username} in {image_path}")
     
 
 def most_liked_users(username: str, tweet_id, type: str = "t"):
     if CHECK_IMAGE_CACHE:
         cached_path = retrieve_image_path(username, "liked")
         if cached_path:
-            print("Found cached image for", username, "in", cached_path)
+            logging.info(f"Found cached image for {username} in {cached_path}")
             if type == "d":
                 user_id = tweet_id
                 if not user_id:
                     user_id = twitter_client.get_user_id_by_user_name(username)
                 twitter_client.send_result_in_direct(cached_path, user_id)
-                print("Send result in direct for", username, "in", cached_path)
+                logging.info(f"Send result in direct for {username} in {cached_path}")
             else:
                 twitter_client.tweet_result(cached_path, tweet_id)
-                print("Tweeted result for", username, "in", cached_path)
+                logging.info(f"Tweeted result for {username} in {cached_path}")
             return
 
-    print("Finding most liked users for", username)
+    logging.info(f"Finding most liked users for {username}")
     try:
         liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
     except Exception as e:
-        print(e)
-        print(username, tweet_id)
+        logging.error(e)
+        logging.error(username, tweet_id)
         return
 
     items = []
@@ -93,18 +105,18 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
         if not user_id:
             user_id = twitter_client.get_user_id_by_user_name(username)
         twitter_client.send_result_in_direct(image_path, user_id)
-        print("Send result in direct for", username, "in", image_path)
+        logging.info(f"Send result in direct for {username} in {image_path}")
     else:
         twitter_client.tweet_result(image_path, tweet_id)
-        print("Tweeted result for", username, "in", image_path)
+        logging.info(f"Tweeted result for {username} in {image_path}")
     db_client.add_handled_liked({
         "username": username,
         "result": items
     })
     
 
-# ACTION = "liking_users"
-ACTION = "liked_users"
+ACTION = "liking_users"
+# ACTION = "liked_users"
 
 
 if __name__ == "__main__":
@@ -113,17 +125,17 @@ if __name__ == "__main__":
     # most_liked_users(username, tweet_id, "d")
     # exit()
 
-    print("Starting to handle", ACTION, "events")
+    logging.info(f"Starting to handle {ACTION} events")
     while True:
         event = redis_client.get_event_from_queue(ACTION)
         if event:
             username, tweet_id, type = event
-            print("Handling", ACTION, "event for", username, tweet_id, f"from {'directs' if type == 'd' else 'tweets'}")
+            logging.info(f"Handling {ACTION} event for {username} {tweet_id} from {'directs' if type == 'd' else 'tweets'}")
             redis_client.add_username_to_progressing(username, f"{ACTION}-progressing")
             if username:
                 if ACTION == "liking_users":
                     most_liking_users(username, tweet_id, type)
                 elif ACTION == "liked_users":
                     most_liked_users(username, tweet_id, type)
-        # else: print("Noting found in queue", ACTION)
+        # else: logging.info(f"Noting found in queue {ACTION}")
         time.sleep(1)

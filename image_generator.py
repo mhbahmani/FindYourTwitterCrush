@@ -6,6 +6,7 @@ from messages import MOST_LIKING_USERS_TITLE, MOST_LIKED_USERS_TITLE
 import langdetect
 
 import requests
+import logging
 import random
 import string
 import os
@@ -84,7 +85,7 @@ def merge_images(data: list, avg: float = -1, username: str = None, total_likes:
     font = ImageFont.truetype("baloo.ttf", 60)
     if avg != -1:
         # Write average score in the buttom middle of the image
-        image_draw.text((X/2 - 170, Y - 100), f"Average: {avg}", fill=(0,0,0), font=font)
+        image_draw.text((X/2 - 170, Y - 100), f"Average: {'{:.1f}'.format(avg)}", fill=(0,0,0), font=font)
     if total_likes != -1: 
         image_draw.text((X/2 - 200, Y - 100), f"Total likes: {total_likes}", fill=(0,0,0), font=font)
 
@@ -108,8 +109,8 @@ def download_image(images: list):
             response = requests.get(image)
             content = response.content
         except Exception as e:
-            print(e)
-            print("Using default image as profile image, image liks:", image)
+            logging.error(e)
+            logging.info("Using default image as profile image, image liks:", image)
             content = open("templates/default-profile-image.jpg", "rb").read()
         with open(f"images/{key}-{counter}.jpg", "wb") as f:
             f.write(content)
