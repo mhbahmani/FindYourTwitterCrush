@@ -30,6 +30,25 @@ CHECK_IMAGE_CACHE = config("CHECK_IMAGE_CACHE", True, cast=bool)
 
 
 def most_liking_users(username: str, tweet_id, type: str = "t"):
+    if type == "c":
+        try:
+            liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
+        except Exception as e:
+            logging.error(e)
+            logging.error(username, tweet_id)
+            return
+        items = []
+        liking_users = list(reversed(list(liking_users.items())[-12:]))
+        for _username, data in liking_users:
+            items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
+        image_path = merge_images(items, likes_avg, username)
+        logging.info(f"result for {username} stored at {image_path}")
+        db_client.add_handled_liking({
+            "username": username,
+            "result": items
+        })
+        return
+
     if CHECK_IMAGE_CACHE:
         cached_path = retrieve_image_path(username, "liking")
         if cached_path:
@@ -46,18 +65,18 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
             return
 
     logging.info(f"Finding most liking users for {username}")
-    liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
+    try:
+        liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
+    except Exception as e:
+        logging.error(e)
+        logging.error(username, tweet_id)
+        return
 
     items = []
-
     liking_users = list(reversed(list(liking_users.items())[-12:]))
     for _username, data in liking_users:
         items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
 
-    db_client.add_handled_liking({
-        "username": username,
-        "result": items
-    })
     image_path = merge_images(items, likes_avg, username)
     if type == "d":
         user_id = tweet_id
@@ -68,9 +87,31 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
     else:
         twitter_client.tweet_result(image_path, tweet_id)
         logging.info(f"Tweeted result for {username} in {image_path}")
+    db_client.add_handled_liking({
+        "username": username,
+        "result": items
+    })
     
 
 def most_liked_users(username: str, tweet_id, type: str = "t"):
+    if type == "c":
+        try:
+            liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
+        except Exception as e:
+            logging.error(e)
+            logging.error(username, tweet_id)
+            return
+
+        items = []
+        liked_users = list(reversed(list(liked_users.items())[-12:]))
+        for _username, data in liked_users:
+            items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
+        db_client.add_handled_liked({
+            "username": username,
+            "result": items
+        })
+        return
+
     if CHECK_IMAGE_CACHE:
         cached_path = retrieve_image_path(username, "liked")
         if cached_path:
