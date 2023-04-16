@@ -47,6 +47,8 @@ class Twitter():
         )
         self.write_api = tweepy.API(write_auth)
 
+        self.write_api = self.tweepy_api
+
         self.twiiter_api = twitter.Api(
             consumer_key=API_KEY,
             consumer_secret=API_KEY_SECRET,
@@ -98,7 +100,7 @@ class Twitter():
         if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
         repliers = []
         try:
-            tweets = tweepy.Cursor(self.bot_api.search_tweets, q=f"to:{tweet_author}", since_id=tweet_id, count=100).items(1000)
+            tweets = tweepy.Cursor(self.write_api.search_tweets, q=f"to:{tweet_author}", since_id=tweet_id, count=100).items(1000)
             for tweet in tweets:
                 if tweet.in_reply_to_status_id == tweet_id:
                     repliers.append((tweet.user.screen_name, tweet.id_str))
@@ -166,7 +168,7 @@ class Twitter():
             if response.status_code == TOO_MANY_REQUESTS:
                 logging.info("Wait in get_user_tweets")
                 self.update_headers()
-                time.sleep(5 * 60)
+                time.sleep(2 * 60)
                 logging.info("Retry in get_user_tweets")
                 continue
             tweets += response.json().get('data', [])
@@ -208,7 +210,7 @@ class Twitter():
             if response.status_code == TOO_MANY_REQUESTS:
                 logging.info("Wait in get_tweet_likes")
                 self.update_headers()
-                sleep(60)
+                sleep(30)
                 logging.info("Retrying")
                 continue
             liking_users += response.json().get('data', [])
@@ -239,7 +241,7 @@ class Twitter():
                     logging.error(e)
                     self.update_headers()
                     logging.info("Changing token and waiting 5 minutes")
-                    sleep(60)
+                    sleep(30)
                     logging.info("Trying again")
             counter += 1
             total_likes += len(likes)
@@ -252,9 +254,11 @@ class Twitter():
                 }
             sleep(4)
 
-        most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"))[-12:]), total_likes / num_tweets
+        most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"))[-12:])
+        for _username in most_liking_users.keys():
+            most_liking_users[_username]["count"] /= num_tweets
         # logging.info(res)
-        return most_liking_users
+        return most_liking_users, total_likes / num_tweets * 100
 
     def update_headers(self, token_num=-1) -> None:
         prev_tok = self.token_number
