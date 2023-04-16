@@ -70,7 +70,10 @@ def merge_images(data: list, avg: float = -1, username: str = None, total_likes:
     template_text = "{} - {}%" if avg != -1 else "{} - {}"
     for i in range(len(images)):
         # Write account name and score middle of the image
-        text = template_text.format(data[i][1], data[i][0])
+        if avg == -1:
+            text = template_text.format(data[i][1], data[i][0])
+        else:
+            text = template_text.format(data[i][1], '{:.1f}'.format(data[i][0]))
         image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(text) / 2 * 22), images_location[i][1] + 430), text, fill=(0,0,0), font=en_font)
         # Write account name in the next line
         # print(data[i][3])
