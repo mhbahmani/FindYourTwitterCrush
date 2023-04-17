@@ -256,9 +256,9 @@ class Twitter():
 
         most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"))[-12:])
         for _username in most_liking_users.keys():
-            most_liking_users[_username]["count"] /= num_tweets
+            most_liking_users[_username]["count"] /= num_tweets * 0.01
         # logging.info(res)
-        return most_liking_users, total_likes / num_tweets * 100
+        return most_liking_users, total_likes / num_tweets
 
     def update_headers(self, token_num=-1) -> None:
         prev_tok = self.token_number
