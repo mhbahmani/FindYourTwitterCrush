@@ -56,7 +56,7 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
             if type == "d":
                 user_id = tweet_id
                 if not user_id:
-                    user_id = twitter_client.get_user_id_by_user_name(username)
+                    user_id = twitter_client.get_user_id_by_username(username)
                 twitter_client.send_result_in_direct(cached_path, user_id)
                 logging.info(f"Send result in direct for {username} in {cached_path}")
             else:
@@ -81,7 +81,7 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
     if type == "d":
         user_id = tweet_id
         if not user_id:
-            user_id = twitter_client.get_user_id_by_user_name(username)
+            user_id = twitter_client.get_user_id_by_username(username)
         twitter_client.send_result_in_direct(image_path, user_id)
         logging.info(f"Send result in direct for {username} in {image_path}")
     else:
@@ -119,7 +119,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
             if type == "d":
                 user_id = tweet_id
                 if not user_id:
-                    user_id = twitter_client.get_user_id_by_user_name(username)
+                    user_id = twitter_client.get_user_id_by_username(username)
                 twitter_client.send_result_in_direct(cached_path, user_id)
                 logging.info(f"Send result in direct for {username} in {cached_path}")
             else:
@@ -144,7 +144,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
     if type == "d":
         user_id = tweet_id
         if not user_id:
-            user_id = twitter_client.get_user_id_by_user_name(username)
+            user_id = twitter_client.get_user_id_by_username(username)
         twitter_client.send_result_in_direct(image_path, user_id)
         logging.info(f"Send result in direct for {username} in {image_path}")
     else:
