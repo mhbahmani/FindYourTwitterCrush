@@ -11,6 +11,8 @@ import logging
 import tweepy
 import twitter
 import random
+import json
+import http
 import time
 import os
 
@@ -25,44 +27,10 @@ ACCESS_TOKEN_SECRET=config("ACCESS_TOKEN_SECRET2")
 
 
 class Twitter():
+    CONFIG_FILE_PATH = "config/twitter.json"
+
     def __init__(self) -> None:
-        self.token_number = 2
-        self.bearer_tokens = [config("BEARER_TOKEN1"), config("BEARER_TOKEN2"), config("BEARER_TOKEN3")]
-        self.update_headers()
-        
-        auth = tweepy.OAuth1UserHandler(
-        API_KEY, API_KEY_SECRET, ACCESS_TOKEN, ACCESS_TOKEN_SECRET
-        )
-        self.tweepy_api = tweepy.API(auth)
-
-        self.clients = [tweepy.Client(token) for token in self.bearer_tokens]
-        self.client_number = 0
-        self.client = self.clients[self.client_number]
-
-        write_auth = tweepy.OAuth1UserHandler(
-            config("APP_API_KEY"),
-            config("APP_API_KEY_SECRET"),
-            config("APP_ACCESS_TOKEN"),
-            config("APP_ACCESS_TOKEN_SECRET")
-        )
-        self.write_api = tweepy.API(write_auth)
-
-        self.write_api = self.tweepy_api
-
-        self.twiiter_api = twitter.Api(
-            consumer_key=API_KEY,
-            consumer_secret=API_KEY_SECRET,
-            access_token_key=ACCESS_TOKEN,
-            access_token_secret=ACCESS_TOKEN_SECRET,
-            sleep_on_rate_limit=True
-
-        )
-
-        self.bot_api = None
-        self.get_bot_token()
-
-        # self.direct_api = None
-        # self.get_direct_api()
+        self.cookies, self.headers = self.load_twitter_config()
     
     def get_tweet_repliers(self, tweet_id: int, tweet_author: str = None, checked: set = set()) -> list:
         # ! deprecated !
@@ -110,9 +78,29 @@ class Twitter():
             time.sleep(15 * 60)
             return self.get_tweet_replies_with_tweepy(tweet_id, tweet_author)
 
-    def get_user_id_by_user_name(self, username: str) -> str:
-        response = requests.get(f"https://api.twitter.com/2/users/by/username/{username}", headers=self.headers)
-        return response.json().get('data', {}).get('id')
+    def get_user_id_by_username(self, username: str) -> str:
+        params = {
+            'variables': f'{{"screen_name":"{username}","withSafetyModeUserFields":true}}',
+            'features': '{"hidden_profile_likes_enabled":false,"hidden_profile_subscriptions_enabled":false,"responsive_web_graphql_exclude_directive_enabled":false,"verified_phone_label_enabled":false,"subscriptions_verification_info_is_identity_verified_enabled":false,"subscriptions_verification_info_verified_since_enabled":false,"highlights_tweets_tab_ui_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":false,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":false}',
+            'fieldToggles': '{"withAuxiliaryUserLabels":false}',
+        }
+
+        response = requests.get(
+            'https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName',
+            params=params,
+            cookies=self.cookies,
+            headers=self.headers,
+            proxies={"https": "10.32.8.14:3128"}
+        )
+
+        if response.status_code != http.HTTPStatus.OK:
+            raise Exception("Request failed to get user id with status code: " + str(response.status_code))
+        
+        user_id = response.json().get("data", {}).get("user", {}).get("result", {}).get("rest_id")
+        if not user_id:
+            raise Exception("User id not found")
+
+        return user_id
 
     def get_user_name_by_username(self, username: str) -> str:
         response = requests.get(f"https://api.twitter.com/2/users/by/username/{username}", headers=self.headers)
@@ -221,7 +209,7 @@ class Twitter():
         return liking_users
 
     def get_user_huge_fans(self, username: str) -> list:
-        user_id = self.get_user_id_by_user_name(username)
+        user_id = self.get_user_id_by_username(username)
         tweets = self.get_user_tweets(user_id)
 
         liking_users_data = {}
@@ -280,7 +268,7 @@ class Twitter():
         return self.tweepy_api.lookup_users(user_id=user_ids, include_entities=False)
 
     def get_user_most_liked_users(self, username: str) -> list:
-        user_id = self.get_user_id_by_user_name(username)
+        # user_id = self.get_user_id_by_user_name(username)
         liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id, username=username)]
         total_likes = len(liked_user_ids)
 
@@ -444,6 +432,15 @@ class Twitter():
             i += 100
             time.sleep(1)
         return direct_requests
+
+    def load_twitter_config(self):
+        if not os.path.exists(Twitter.CONFIG_FILE_PATH):
+            raise Exception("Twitter config file not found")
+        with open(Twitter.CONFIG_FILE_PATH, "r") as f:
+            config = json.load(f)
+        
+        return config.get("cookie"), config.get("headers")
+
 
 # twitter_client = Twitter()
 # twitter_client.get_directs_usernames()
