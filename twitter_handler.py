@@ -31,40 +31,9 @@ class Twitter():
 
     def __init__(self) -> None:
         self.cookies, self.headers = self.load_twitter_config()
-    
-    def get_tweet_repliers(self, tweet_id: int, tweet_author: str = None, checked: set = set()) -> list:
-        # ! deprecated !
-        if tweet_author and tweet_author in checked:
-            return
-        if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
-        max_id = None
-        page_index = 0
-        while True:
-            page_index += 1
-            try:
-                term = "to:%s" % tweet_author
-                replies = self.twiiter_api.GetSearch(
-                    term=term,
-                    since_id=tweet_id,
-                    max_id=max_id,
-                    count=100,
-                )
-            except twitter.error.TwitterError as e:
-                time.sleep(60)
-                continue
-            
-            if not replies:
-                break
-            
-            for reply in replies:
-                if reply.in_reply_to_status_id == tweet_id:
-                    checked.add(reply.user.screen_name)
-                    yield (reply.user.screen_name, reply.id_str)
-
-            if len(replies) != 100:
-                break
 
     def get_tweet_replies_with_tweepy(self, tweet_id: int, tweet_author: str = None) -> list:
+        # Old
         if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
         repliers = []
         try:
@@ -103,17 +72,21 @@ class Twitter():
         return user_id
 
     def get_user_name_by_username(self, username: str) -> str:
+        # Old
         response = requests.get(f"https://api.twitter.com/2/users/by/username/{username}", headers=self.headers)
         return response.json().get('data', {}).get('name')
 
     def get_user_profile_image(self, username: str=None):
+        # Old
         response = requests.get(f"https://api.twitter.com/1.1/users/show.json?screen_name={username}", headers=self.headers)
         return response.json().get('profile_image_url')
 
     def get_tweet_author_username(self, tweet_id: str) -> str:
+        # Old
         return self.tweepy_api.get_status(tweet_id).user.screen_name
 
     def get_user_likes(self, user_id, username: str = None) -> list:
+        # Old
         likes = []
         next_token = None
         counter = 0
@@ -142,6 +115,7 @@ class Twitter():
         return likes
 
     def get_user_tweets(self, user_id: str) -> list:
+        # Old
         """
             outputs: [{id: , text: }]
         """
@@ -172,6 +146,7 @@ class Twitter():
         return tweets
 
     def get_tweet_likes(self, tweet_id: str) -> list:
+        # Old
         # logging.info(tweet_id)
         params = {
             'max_results': 100,
@@ -209,6 +184,7 @@ class Twitter():
         return liking_users
 
     def get_user_huge_fans(self, username: str) -> list:
+        # Old
         user_id = self.get_user_id_by_username(username)
         tweets = self.get_user_tweets(user_id)
 
@@ -249,6 +225,7 @@ class Twitter():
         return most_liking_users, total_likes / num_tweets
 
     def update_headers(self, token_num=-1) -> None:
+        # Old
         prev_tok = self.token_number
         if token_num == -1:
             self.token_number += 1
@@ -261,14 +238,17 @@ class Twitter():
         # logging.info(f"Token updated from {prev_tok} to {self.token_number}")
 
     def update_client(self) -> None:
+        # Old
         self.client_number += 1
         self.client = self.clients[self.client_number % len(self.clients)]
 
     def get_users_by_user_id_list(self, user_ids: list) -> str:
+        # Old
         return self.tweepy_api.lookup_users(user_id=user_ids, include_entities=False)
 
     def get_user_most_liked_users(self, username: str) -> list:
-        # user_id = self.get_user_id_by_user_name(username)
+        # Old
+        user_id = self.get_user_id_by_username(username)
         liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id, username=username)]
         total_likes = len(liked_user_ids)
 
@@ -287,6 +267,7 @@ class Twitter():
         return users_data, total_likes
 
     def tweet_result(self, image_path: str, tweet_id: str):
+        # Old
         try:
             media = self.bot_api.media_upload(image_path)
             self.bot_api.update_status(status=self.generate_result_tweet_text(), media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
@@ -295,6 +276,7 @@ class Twitter():
             logging.error(e)
 
     def send_result_in_direct(self, image_path: str, user_id: str):
+        # Old
         try:
             media = self.bot_api.media_upload(image_path)
             self.bot_api.send_direct_message(
@@ -311,6 +293,7 @@ class Twitter():
         return image_link.replace("_normal.jpg", ".jpg")
 
     def get_direct_api(self):
+        # Old
         # if token file exists, load tokens from it
         tokens_file_path = "direct_tokens.txt"
         tokens = None
@@ -326,6 +309,7 @@ class Twitter():
         self.direct_api = tweepy.API(auth)
 
     def get_bot_token(self):
+        # Old
         # if token file exists, load tokens from it
         tokens_file_path = "bot_tokens.txt"
         tokens = None
@@ -393,15 +377,18 @@ class Twitter():
         #         self.get_bot_token()
 
     def save_bot_tokens(self, access_token: str, access_token_secret: str):
+        # Old
         tokens_file_path = "bot_tokens.txt"
         with open(tokens_file_path, "w") as f:
             f.write(f"{access_token} {access_token_secret}")
 
     def generate_result_tweet_text(self) -> str:
+        # Old
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
         
     def get_user_directs_sender_ids(self) -> dict:
+        # Old
         sender_ids = {}
         # Get messages with cursor
         # msgs = self.bot_api.get_direct_messages(count=100)
@@ -418,6 +405,7 @@ class Twitter():
         return sender_ids
     
     def get_directs_usernames(self) -> list:
+        # Old
         direct_requests = []
         sender_ids = self.get_user_directs_sender_ids()
         # lookup users in 100 user chunks
