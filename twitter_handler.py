@@ -427,7 +427,7 @@ class Twitter():
         with open(Twitter.CONFIG_FILE_PATH, "r") as f:
             config = json.load(f)
         
-        return config.get("cookie"), config.get("headers")
+        return config.get("cookies"), config.get("headers")
 
 
 # twitter_client = Twitter()
