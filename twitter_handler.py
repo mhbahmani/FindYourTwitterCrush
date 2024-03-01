@@ -1,5 +1,6 @@
 from http.client import TOO_MANY_REQUESTS
 from collections import Counter
+from enum import Enum
 from time import sleep
 from pytz import UTC
 
@@ -29,26 +30,55 @@ DOUBLE_QUOTE_CHAR = "\""
 FETCH_LIKES_COUNT = 2000
 LIKES_PER_EACH_REQUEST = 100
 
+
+class REQUEST_TYPE(Enum):
+    DIRECT = "d"
+    TWEET = "t"
+
 class Twitter():
     CONFIG_FILE_PATH = "config/twitter.json"
 
     def __init__(self) -> None:
         self.cookies, self.headers = self.load_twitter_config()
 
-    def get_tweet_replies_with_tweepy(self, tweet_id: int, tweet_author: str = None) -> list:
-        # Old
-        if not tweet_author: tweet_author = self.get_tweet_author_username(tweet_id)
-        repliers = []
-        try:
-            tweets = tweepy.Cursor(self.write_api.search_tweets, q=f"to:{tweet_author}", since_id=tweet_id, count=100).items(1000)
-            for tweet in tweets:
-                if tweet.in_reply_to_status_id == tweet_id:
-                    repliers.append((tweet.user.screen_name, tweet.id_str))
-            return repliers
-        except Exception as e:
-            logging.error(e)
-            time.sleep(15 * 60)
-            return self.get_tweet_replies_with_tweepy(tweet_id, tweet_author)
+    def get_replied_users(self, tweet_id: int, tweet_author_username: str = None) -> list:
+        repliers = set()
+        repliers_with_tweet_id = {}
+        if tweet_author_username: repliers.add(tweet_author_username)
+        cursor = None
+        # self.dump_json("tweet.json ", tweet)
+
+        while True:
+            tweet = self.get_tweet_info_by_id(tweet_id, cursor)
+            entries = tweet.get("data", {}).get("threaded_conversation_with_injections_v2", {}).get("instructions")[0].get("entries", [])
+            for entry in entries[:-1]:
+                if entry.get("content", {}).get("items", {}):
+                    for _item in entry.get("content", {}).get("items", {}):
+                        screen_name = _item.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
+                        if not repliers_with_tweet_id.get(screen_name):
+                            repliers_with_tweet_id[screen_name] = [
+                                screen_name,
+                                _item.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
+                                str(REQUEST_TYPE.TWEET)
+                            ]
+                else:
+                    screen_name = entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
+                    repliers_with_tweet_id[screen_name] = [
+                        screen_name,
+                        entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
+                        str(REQUEST_TYPE.TWEET)
+                    ]
+                    
+            if entries[-1] and entries[-1].get("content", {}).get("itemContent", {}).get("cursorType") == "Bottom":
+                cursor = entries[-1].get("content", {}).get("itemContent", {}).get("value")
+            else: break
+
+        return repliers
+
+    def dump_json(self, filename: str, content: dict):
+        import json
+        with open(filename, "w") as f:
+            json.dump(content, f, indent=4)
 
     def get_user_id_by_username(self, username: str) -> str:
         params = {
@@ -155,9 +185,9 @@ class Twitter():
         return liked_users
 
 
-    def get_tweet_info_by_id(self, tweet_id: str):
+    def get_tweet_info_by_id(self, tweet_id: str, cursor: str = None):
         params = {
-            'variables': f"{{\"focalTweetId\":\"{tweet_id}\",\"referrer\":\"home\",\"controller_data\":\"DAACDAABDAABCgABBAAAQkICAAEKAAKAAAAAAAEAAAoACXXmUMTa9zrNCAALAAAAAw8ADAMAAAARAQACQkIAAAQAAAEAAAAAgAQKAA63LffZDs1J6QoAEANIcBRqucqJAAAAAA==\",\"with_rux_injections\":false,\"includePromotedContent\":true,\"withCommunity\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withBirdwatchNotes\":true,\"withVoice\":true,\"withV2Timeline\":true}}",
+            'variables': f"{{\"focalTweetId\":\"{tweet_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"referrer\":\"tweet\",\"with_rux_injections\":false,\"includePromotedContent\":true,\"withCommunity\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withBirdwatchNotes\":true,\"withVoice\":true,\"withV2Timeline\":true}}",
             'features': '{"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}',
             'fieldToggles': '{"withArticleRichContentState":true}',
         }
