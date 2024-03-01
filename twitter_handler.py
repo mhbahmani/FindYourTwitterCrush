@@ -147,6 +147,28 @@ class Twitter():
         date_str = tweet.get("data", {}).get("threaded_conversation_with_injections_v2", {}).get("instructions", {})[0].get("entries", {})[0].get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("legacy", {}).get("created_at", {})
         return datetime.datetime.strptime(date_str, "%a %b %d %H:%M:%S %z %Y").replace(tzinfo=UTC) 
 
+    def get_user_by_screen_name(self, screen_name: str) -> dict:
+        params = {
+            'include_ext_is_blue_verified': '1',
+            'include_ext_verified_type': '1',
+            'include_ext_profile_image_shape': '1',
+            'q': f'{screen_name}',
+            'src': 'search_box',
+            'result_type': 'events,users,topics,lists',
+        }
+
+        response = requests.get(
+            'https://twitter.com/i/api/1.1/search/typeahead.json',
+            params=params,
+            cookies=self.cookies,
+            headers=self.headers
+        )
+
+        if response.status_code != http.HTTPStatus.OK:
+            raise Exception("Request failed to search for user by screen name with status code: " + str(response.status_code))
+        
+        return response.json().get("users", [])[0]
+
     def get_user_tweets(self, user_id: str) -> list:
         # Old
         """
