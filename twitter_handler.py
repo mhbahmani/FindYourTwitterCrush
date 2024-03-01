@@ -26,7 +26,8 @@ ACCESS_TOKEN=config("ACCESS_TOKEN2")
 ACCESS_TOKEN_SECRET=config("ACCESS_TOKEN_SECRET2")
 
 DOUBLE_QUOTE_CHAR = "\""
-FETCH_LIKES_COUNT = 500
+FETCH_LIKES_COUNT = 2000
+LIKES_PER_EACH_REQUEST = 100
 
 class Twitter():
     CONFIG_FILE_PATH = "config/twitter.json"
@@ -86,12 +87,24 @@ class Twitter():
         # Old
         return self.tweepy_api.get_status(tweet_id).user.screen_name
 
-    def get_user_likes(self, user_id, username: str = None) -> list:
-        likes = []
+    def get_user_likes(self, user_id, username: str = None) -> dict:
+        """
+        Outpu:
+        {
+            screen_name: {
+                name: ,
+                profile_image_url: ,
+                count:        
+            },
+        }
+        """
+        liked_users = {}
+        all_likes = []
+        fetched_likes_count = 0
         cursor = None
         while True:
             params = {
-                'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + cursor if cursor else ''},\"count\":20,\"includePromotedContent\":false,\"withClientEventToken\":false,\"withBirdwatchNotes\":false,\"withVoice\":true,\"withV2Timeline\":true}}",
+                'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + cursor if cursor else ''},\"count\":{LIKES_PER_EACH_REQUEST},\"includePromotedContent\":false,\"withClientEventToken\":false,\"withBirdwatchNotes\":false,\"withVoice\":true,\"withV2Timeline\":true}}",
                 'features': '{"responsive_web_graphql_exclude_directive_enabled":false,"verified_phone_label_enabled":false,"responsive_web_home_pinned_timelines_enabled":true,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":false,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":false,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_media_download_video_enabled":false,"responsive_web_enhance_cards_enabled":false}',
             }
 
@@ -108,22 +121,38 @@ class Twitter():
             # User info in each entry:
             # entry.get("content").get("itemContent").get("tweet_results").get("result").get("core").get("user_results").get("result").get("legacy")
             iteration_likes = response.json().get("data", {}).get("user", {}).get("result", {}).get("timeline_v2").get("timeline").get("instructions")[0].get("entries", [])
-            likes += iteration_likes[:-2]
+            fetched_likes_count += len(iteration_likes)
+            all_likes += iteration_likes[:-2]
 
-            if len(likes) >= FETCH_LIKES_COUNT:
-                break
+            for like in iteration_likes[:-2]:
+                user = self.get_liked_tweet_author_user(like)
+                if not user:
+                    print(f"Something is wrong with this tweet {like}")
+                    continue
+                liked_users[user.get("screen_name")] = {
+                    "name": user.get("name"),
+                    "profile_image_url": self.fix_image_address(user.get("profile_image_url_https")),
+                    "count": liked_users.get(user.get("screen_name"), {"count": 0}).get("count", 0) + 1
+                }
+
+            print(fetched_likes_count)
+            if fetched_likes_count >= FETCH_LIKES_COUNT: break
             
             last_tweet_id = iteration_likes[-3].get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id")
-            last_tweet_date = self.get_tweet_creattion_date_by_id(last_tweet_id)
-            if last_tweet_date < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=356):
-                break
+            try:
+                last_tweet_date = self.get_tweet_creattion_date_by_id(last_tweet_id)
+                print(last_tweet_date)
+                if last_tweet_date < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=356):
+                    break
+            except:
+                print("Error in getting tweet date")
 
             if iteration_likes[-1].get("content", {}).get("cursorType") == "Bottom":
                 cursor = f'"{iteration_likes[-1].get("content", {}).get("value")}"'
             else:
                 break
 
-        return likes
+        return liked_users
 
 
     def get_tweet_info_by_id(self, tweet_id: str):
@@ -144,7 +173,12 @@ class Twitter():
 
     def get_tweet_creattion_date_by_id(self, tweet_id: str) -> datetime:
         tweet = self.get_tweet_info_by_id(tweet_id)
-        date_str = tweet.get("data", {}).get("threaded_conversation_with_injections_v2", {}).get("instructions", {})[0].get("entries", {})[0].get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("legacy", {}).get("created_at", {})
+        entries = tweet.get("data", {}).get("threaded_conversation_with_injections_v2", {}).get("instructions", {})[0].get("entries", {})
+        for entry in entries:
+            if entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id") == tweet_id:
+                date_str = entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("legacy", {}).get("created_at", {})
+                break
+        else: raise Exception("Tweet not found in the entries")
         return datetime.datetime.strptime(date_str, "%a %b %d %H:%M:%S %z %Y").replace(tzinfo=UTC) 
 
     def get_user_by_screen_name(self, screen_name: str) -> dict:
@@ -168,6 +202,13 @@ class Twitter():
             raise Exception("Request failed to search for user by screen name with status code: " + str(response.status_code))
         
         return response.json().get("users", [])[0]
+
+    def get_liked_tweet_author_user(self, liked_tweet: dict) -> dict:
+        if liked_tweet.get("content").get("itemContent").get("tweet_results", {}).get("result", {}).get("__typename") == "TweetWithVisibilityResults":
+            tweet_info = liked_tweet.get("content").get("itemContent").get("tweet_results", {}).get("result", {}).get("tweet", {}).get("core", {})
+        else:
+            tweet_info = liked_tweet.get("content").get("itemContent").get("tweet_results", {}).get("result", {}).get("core", {})
+        return tweet_info.get("user_results", {}).get("result", {}).get("legacy", {})
 
     def get_user_tweets(self, user_id: str) -> list:
         # Old
