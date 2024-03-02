@@ -436,11 +436,6 @@ class Twitter():
         with open(tokens_file_path, "w") as f:
             f.write(f"{access_token} {access_token_secret}")
 
-    def generate_result_tweet_text(self) -> str:
-        # Old
-        # Choose random element of messages list
-        return random.choice(RESULT_TWEET_TEXTS)
-
     def get_user_most_liked_users(self, username: str, number_of_results: int = 12) -> dict:
         """
         Output:
@@ -461,6 +456,16 @@ class Twitter():
         )
 
         return most_liked_users, total_likes_count
+
+    def tweet_result(self, image_path: str, tweet_id: str):  
+        api = tweepy.API(self.auth_media)
+        uploaded_media = api.media_upload(image_path)
+
+        self.client.create_tweet(
+            text=self.generate_result_tweet_text(),
+            media_ids=[uploaded_media.media_id],
+            in_reply_to_tweet_id=tweet_id
+        )
 
     def get_user_directs_sender_ids(self) -> dict:
         # Old
@@ -486,3 +491,7 @@ class Twitter():
             config = json.load(f)
         
         return config.get("cookies"), config.get("headers")
+
+    def generate_result_tweet_text(self) -> str:
+        # Choose random element of messages list
+        return random.choice(RESULT_TWEET_TEXTS)
