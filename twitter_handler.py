@@ -27,7 +27,7 @@ ACCESS_TOKEN=config("ACCESS_TOKEN2")
 ACCESS_TOKEN_SECRET=config("ACCESS_TOKEN_SECRET2")
 
 DOUBLE_QUOTE_CHAR = "\""
-FETCH_LIKES_COUNT = 2000
+FETCH_LIKES_COUNT = 150
 LIKES_PER_EACH_REQUEST = 100
 
 
@@ -37,9 +37,33 @@ class REQUEST_TYPE(Enum):
 
 class Twitter():
     CONFIG_FILE_PATH = "config/twitter.json"
+    BOT_CONFIG_FILE_PATH = "config/twitter_bot.json"
 
     def __init__(self) -> None:
-        self.cookies, self.headers = self.load_twitter_config()
+        self.cookies, self.headers = self.load_twitter_config(Twitter.CONFIG_FILE_PATH)
+        self.bot_cookies, self.bot_headers = self.load_twitter_config(Twitter.BOT_CONFIG_FILE_PATH)
+
+        CONSUMER_KEY = config("CONSUMER_KEY"),
+        CONSUMER_SECRET = config("CONSUMER_SECRET"),
+        ACCESS_TOKEN = config("ACCESS_TOKEN"),
+        ACCESS_TOKEN_SECRET = config("ACCESS_TOKEN_SECRET")
+
+        self.auth_media = tweepy.OAuthHandler(
+            CONSUMER_KEY,
+            CONSUMER_SECRET
+        )   
+        self.auth_media.set_access_token(
+            ACCESS_TOKEN,
+            ACCESS_TOKEN_SECRET
+        )
+
+        self.client = tweepy.Client(
+            consumer_key=self.CONSUMER_KEY,
+            consumer_secret=self.CONSUMER_SECRET,
+            access_token=self.ACCESS_TOKEN,
+            access_token_secret=self.ACCESS_TOKEN_SECRET
+        )
+
 
     def get_replied_users(self, tweet_id: int, tweet_author_username: str = None) -> list:
         repliers = set()
@@ -129,7 +153,7 @@ class Twitter():
         }
         """
         liked_users = {}
-        all_likes = []
+        total_likes_count = 0
         fetched_likes_count = 0
         cursor = None
         while True:
@@ -152,9 +176,9 @@ class Twitter():
             # entry.get("content").get("itemContent").get("tweet_results").get("result").get("core").get("user_results").get("result").get("legacy")
             iteration_likes = response.json().get("data", {}).get("user", {}).get("result", {}).get("timeline_v2").get("timeline").get("instructions")[0].get("entries", [])
             fetched_likes_count += len(iteration_likes)
-            all_likes += iteration_likes[:-2]
 
             for like in iteration_likes[:-2]:
+                total_likes_count += 1
                 user = self.get_liked_tweet_author_user(like)
                 if not user:
                     print(f"Something is wrong with this tweet {like}")
@@ -162,7 +186,8 @@ class Twitter():
                 liked_users[user.get("screen_name")] = {
                     "name": user.get("name"),
                     "profile_image_url": self.fix_image_address(user.get("profile_image_url_https")),
-                    "count": liked_users.get(user.get("screen_name"), {"count": 0}).get("count", 0) + 1
+                    "count": liked_users.get(user.get("screen_name"), {"count": 0}).get("count", 0) + 1,
+                    "screen_name": user.get("screen_name")
                 }
 
             print(fetched_likes_count)
@@ -182,7 +207,7 @@ class Twitter():
             else:
                 break
 
-        return liked_users
+        return liked_users, total_likes_count
 
 
     def get_tweet_info_by_id(self, tweet_id: str, cursor: str = None):
@@ -372,35 +397,6 @@ class Twitter():
         # Old
         return self.tweepy_api.lookup_users(user_id=user_ids, include_entities=False)
 
-    def get_user_most_liked_users(self, username: str) -> list:
-        # Old
-        user_id = self.get_user_id_by_username(username)
-        liked_user_ids = [like.get('author_id') for like in self.get_user_likes(user_id, username=username)]
-        total_likes = len(liked_user_ids)
-
-        users_data = {}
-        user_id_count = dict(Counter(liked_user_ids))
-        most_liked_users_ids = dict(sorted(user_id_count.items(), key=lambda x: x[1])[-12:])
-        liked_users_object = []
-        liked_users_object = self.get_users_by_user_id_list(most_liked_users_ids)
-        for user in liked_users_object:
-            users_data[user.screen_name] = {
-                "name": user.name,
-                "profile_image_url": self.fix_image_address(user.profile_image_url_https),
-                "count": user_id_count.get(user.id, 0),
-            }
-
-        return users_data, total_likes
-
-    def tweet_result(self, image_path: str, tweet_id: str):
-        # Old
-        try:
-            media = self.bot_api.media_upload(image_path)
-            self.bot_api.update_status(status=self.generate_result_tweet_text(), media_ids=[media.media_id], in_reply_to_status_id=int(tweet_id), auto_populate_reply_metadata=True)
-        except Exception as e:
-            logging.error(f"Something went wrong on tweeting the results {image_path} {tweet_id}")
-            logging.error(e)
-
     def send_result_in_direct(self, image_path: str, user_id: str):
         # Old
         try:
@@ -434,74 +430,6 @@ class Twitter():
         )
         self.direct_api = tweepy.API(auth)
 
-    def get_bot_token(self):
-        # Old
-        # if token file exists, load tokens from it
-        tokens_file_path = "bot_tokens.txt"
-        tokens = None
-        if os.path.exists(tokens_file_path):
-            with open(tokens_file_path, "r") as f:
-                tokens = f.read()
-        if tokens: 
-            access_token, access_token_secret = tokens.split()
-        else:
-            oauth1_user_handler = tweepy.OAuth1UserHandler(
-                config("APP_API_KEY"),
-                config("APP_API_KEY_SECRET"),
-                config("APP_ACCESS_TOKEN"),
-                config("APP_ACCESS_TOKEN_SECRET"),
-                callback="http://51.89.107.199:5000/callback"
-            )
-            print(oauth1_user_handler.get_authorization_url())
-            # check if tokens file is exists
-            # if not, wait for 1 second
-            # if tokens file exists, read it and return the tokens
-            tokens_file_path = "oauth_tokens.txt"
-            while True:
-                if os.path.exists(tokens_file_path):
-                    with open(tokens_file_path, "r") as f:
-                        tokens = f.read()
-                    if tokens:
-                        break
-                sleep(2)
-            os.remove(tokens_file_path)
-            oauth_token, oauth_verifier = tokens.split(" ")
-
-            request_token = oauth1_user_handler.request_token["oauth_token"]
-            request_secret = oauth1_user_handler.request_token["oauth_token_secret"]
-            print(request_secret, request_token)
-
-            new_oauth1_user_handler = tweepy.OAuth1UserHandler(
-                request_token, request_secret,
-                callback="http://51.89.107.199:5000/callback"
-            )
-            new_oauth1_user_handler.request_token = {
-                "oauth_token": oauth_token,
-                "oauth_token_secret": request_secret
-            }
-            access_token, access_token_secret = (
-                new_oauth1_user_handler.get_access_token(
-                    oauth_verifier
-                )
-            )
-
-        self.save_bot_tokens(access_token, access_token_secret)
-        auth = tweepy.OAuth1UserHandler(
-            config("APP_API_KEY"), config("APP_API_KEY_SECRET"),
-            access_token, access_token_secret
-        )
-        self.bot_api = tweepy.API(auth)
-        # Generate random text and send it to twitter
-        # import random, string
-        # text = ''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(10))
-        # try:
-        #     self.bot_api.update_status(text)
-        # except Exception as e:
-        #     logging.error(e)
-        #     if os.path.exists(tokens_file_path):
-        #         os.remove(tokens_file_path)
-        #         self.get_bot_token()
-
     def save_bot_tokens(self, access_token: str, access_token_secret: str):
         # Old
         tokens_file_path = "bot_tokens.txt"
@@ -529,34 +457,11 @@ class Twitter():
             logging.info("Wait in get directs")
             time.sleep(5 * 60)
         return sender_ids
-    
-    def get_directs_usernames(self) -> list:
-        # Old
-        direct_requests = []
-        sender_ids = self.get_user_directs_sender_ids()
-        # lookup users in 100 user chunks
-        i = 0
-        while i < len(sender_ids):
-            users = self.get_users_by_user_id_list(list(sender_ids.keys())[i:i+100])
-            for user in users:
-                direct_requests.append({
-                    "username": user.screen_name,
-                    "user_id": user.id
-                })
-            i += 100
-            time.sleep(1)
-        return direct_requests
 
-    def load_twitter_config(self):
-        if not os.path.exists(Twitter.CONFIG_FILE_PATH):
-            raise Exception("Twitter config file not found")
-        with open(Twitter.CONFIG_FILE_PATH, "r") as f:
+    def load_twitter_config(self, path: str):
+        if not os.path.exists(path):
+            raise Exception(f"Config file not found at {path}")
+        with open(path, "r") as f:
             config = json.load(f)
         
         return config.get("cookies"), config.get("headers")
-
-
-# twitter_client = Twitter()
-# twitter_client.get_directs_usernames()
-# print(twitter_client.get_user_most_liked_users("mh_bahmani"))
-# print(twitter_client.get_user_huge_fans("mh_bahmani"))
