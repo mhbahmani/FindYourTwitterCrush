@@ -440,7 +440,28 @@ class Twitter():
         # Old
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
-        
+
+    def get_user_most_liked_users(self, username: str, number_of_results: int = 12) -> dict:
+        """
+        Output:
+        {
+            screen_name: {
+                name: ,
+                profile_image_url: ,
+                count:        
+            },
+        }
+        """
+        user_id = self.get_user_id_by_username(username)
+        liked_users, total_likes_count = self.get_user_likes(user_id)
+        liked_users = dict(Counter(liked_users))
+
+        most_liked_users = dict(
+            sorted(liked_users.items(), key=lambda x: x[-1].get("count", 0), reverse=True)[:number_of_results]
+        )
+
+        return most_liked_users, total_likes_count
+
     def get_user_directs_sender_ids(self) -> dict:
         # Old
         sender_ids = {}
