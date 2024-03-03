@@ -4,7 +4,10 @@ from enum import Enum
 from time import sleep
 from pytz import UTC
 
-from messages import RESULT_TWEET_TEXTS
+from src.messages import (
+    PRIVATE_OUTPUT_MESSAGE,
+    RESULT_TWEET_TEXTS
+)
 
 import requests
 import datetime
@@ -50,6 +53,7 @@ class Twitter():
             ACCESS_TOKEN,
             ACCESS_TOKEN_SECRET
         )
+        self.api = tweepy.API(self.auth_media)
 
         self.client = tweepy.Client(
             consumer_key=CONSUMER_KEY,
@@ -369,40 +373,58 @@ class Twitter():
         # logging.info(res)
         return most_liking_users, total_likes / num_tweets
 
-    def update_headers(self, token_num=-1) -> None:
-        # Old
-        prev_tok = self.token_number
-        if token_num == -1:
-            self.token_number += 1
-        else:
-            self.token_number = token_num
-        self.token_number %= len(self.bearer_tokens)
-        self.headers = {
-            'Authorization': f"Bearer {self.bearer_tokens[self.token_number]}"
-        }
-        # logging.info(f"Token updated from {prev_tok} to {self.token_number}")
-
-    def update_client(self) -> None:
-        # Old
-        self.client_number += 1
-        self.client = self.clients[self.client_number % len(self.clients)]
-
     def get_users_by_user_id_list(self, user_ids: list) -> str:
         # Old
         return self.tweepy_api.lookup_users(user_id=user_ids, include_entities=False)
 
-    def send_result_in_direct(self, image_path: str, user_id: str):
-        # Old
-        try:
-            media = self.bot_api.media_upload(image_path)
-            self.bot_api.send_direct_message(
-                recipient_id=user_id,
-                text=self.generate_result_tweet_text(),
-                attachment_type="media",
-                attachment_media_id=media.media_id)
-        except Exception as e:
-            logging.error(f"Something went wrong on sending the results in direct {image_path} {user_id}")
-            logging.error(e)
+    def send_result_in_direct(self, conversation_id: str, output_address: str, ):
+        message = f"{self.generate_result_tweet_text}:\n{output_address}\n{PRIVATE_OUTPUT_MESSAGE}"
+        self.send_direct_message(conversation_id, f"نتیجه شما: {output_address}")
+
+    def send_direct_message(self, conversation_id: str, message_text: str = None, media_path: str = None):
+        # Not working when media is added, Gives 403 (Invalid media)
+
+        # Upload media
+        # if media_path:
+        #     uploaded_media = self.upload_media(media_path)
+        # elif not message_text:
+        #     raise Exception("Nothing to send")
+
+        params = {
+            'ext': 'mediaColor,altText,mediaStats,highlightedLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl',
+            'include_ext_alt_text': 'true',
+            'include_ext_limited_action_results': 'true',
+            'include_reply_count': '1',
+            'tweet_mode': 'extended',
+            'include_ext_views': 'true',
+            'include_groups': 'true',
+            'include_inbox_timelines': 'true',
+            'include_ext_media_color': 'true',
+            'supports_reactions': 'true',
+        }
+
+        json_data = {
+            'conversation_id': conversation_id,
+            # 'media_id': uploaded_media.media_id, # Uncomment for sending media
+            'recipient_ids': False,
+            'request_id': 'b571c5a0-d999-11ee-a2c8-c1da67973d72',
+            'text': message_text,
+            'cards_platform': 'Web-12',
+            'include_cards': 1,
+            'include_quote_count': True,
+            'dm_users': False,
+        }
+
+        response = requests.post(
+            'https://twitter.com/i/api/1.1/dm/new2.json',
+            params=params,
+            cookies=self.cookies,
+            headers=self.headers,
+            json=json_data,
+        )
+
+        if response.status_code != http.HTTPStatus.OK:
+            raise Exception(f"Failed to sent result to {conversation_id}")
 
     def fix_image_address(self, image_link) -> str:
         # remove _normal.jpg from image like
@@ -452,8 +474,7 @@ class Twitter():
         return most_liked_users, total_likes_count
 
     def tweet_result(self, image_path: str, tweet_id: str):  
-        api = tweepy.API(self.auth_media)
-        uploaded_media = api.media_upload(image_path)
+        uploaded_media = self.api.media_upload(image_path)
 
         self.client.create_tweet(
             text=self.generate_result_tweet_text(),
@@ -592,6 +613,9 @@ class Twitter():
         entry_id = self.get_inbox_initial_state()
         return self.iterate_over_user_inbox_conversations(entry_id, direct_message_time_treshold)
 
+    def upload_media(self, media_path: str):
+        return self.api.media_upload(media_path)
+
     def get_user_directs_sender_ids(self) -> dict:
         # Old
         sender_ids = {}
@@ -623,3 +647,8 @@ class Twitter():
 
     def epoch_time_convertor(self, epoch_time: int) -> datetime:
         return datetime.datetime.fromtimestamp(int(epoch_time) // 1000)
+    
+    def move_image_to_folder(self, image_path: str, folder_path: str):
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+        os.rename(image_path, os.path.join(folder_path, os.path.basename(image_path)))
