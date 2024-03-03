@@ -2,8 +2,10 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python
 
 config/twitter.json
+config/twitter_bot.json
 test.py
 tmp/*
+.vscode
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
