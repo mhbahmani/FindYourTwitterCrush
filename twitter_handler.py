@@ -20,12 +20,6 @@ import os
 from decouple import config
 
 
-API_KEY = config("API_KEY2")
-API_KEY_SECRET = config("API_KEY_SECRET2")
-
-ACCESS_TOKEN=config("ACCESS_TOKEN2")
-ACCESS_TOKEN_SECRET=config("ACCESS_TOKEN_SECRET2")
-
 DOUBLE_QUOTE_CHAR = "\""
 FETCH_LIKES_COUNT = 150
 LIKES_PER_EACH_REQUEST = 100
@@ -43,9 +37,9 @@ class Twitter():
         self.cookies, self.headers = self.load_twitter_config(Twitter.CONFIG_FILE_PATH)
         self.bot_cookies, self.bot_headers = self.load_twitter_config(Twitter.BOT_CONFIG_FILE_PATH)
 
-        CONSUMER_KEY = config("CONSUMER_KEY"),
-        CONSUMER_SECRET = config("CONSUMER_SECRET"),
-        ACCESS_TOKEN = config("ACCESS_TOKEN"),
+        CONSUMER_KEY = config("CONSUMER_KEY")
+        CONSUMER_SECRET = config("CONSUMER_SECRET")
+        ACCESS_TOKEN = config("ACCESS_TOKEN")
         ACCESS_TOKEN_SECRET = config("ACCESS_TOKEN_SECRET")
 
         self.auth_media = tweepy.OAuthHandler(
@@ -58,10 +52,10 @@ class Twitter():
         )
 
         self.client = tweepy.Client(
-            consumer_key=self.CONSUMER_KEY,
-            consumer_secret=self.CONSUMER_SECRET,
-            access_token=self.ACCESS_TOKEN,
-            access_token_secret=self.ACCESS_TOKEN_SECRET
+            consumer_key=CONSUMER_KEY,
+            consumer_secret=CONSUMER_SECRET,
+            access_token=ACCESS_TOKEN,
+            access_token_secret=ACCESS_TOKEN_SECRET
         )
 
 
@@ -467,6 +461,137 @@ class Twitter():
             in_reply_to_tweet_id=tweet_id
         )
 
+    def get_inbox_initial_state(self) -> list:
+        params = {
+            'nsfw_filtering_enabled': 'false',
+            'include_profile_interstitial_type': '1',
+            'include_blocking': '1',
+            'include_blocked_by': '1',
+            'include_followed_by': '1',
+            'include_want_retweets': '1',
+            'include_mute_edge': '1',
+            'include_can_dm': '1',
+            'include_can_media_tag': '1',
+            'include_ext_is_blue_verified': '1',
+            'include_ext_verified_type': '1',
+            'include_ext_profile_image_shape': '1',
+            'skip_status': '1',
+            'dm_secret_conversations_enabled': 'false',
+            'krs_registration_enabled': 'true',
+            'cards_platform': 'Web-12',
+            'include_cards': '1',
+            'include_ext_alt_text': 'true',
+            'include_ext_limited_action_results': 'true',
+            'include_quote_count': 'true',
+            'include_reply_count': '1',
+            'tweet_mode': 'extended',
+            'include_ext_views': 'true',
+            'dm_users': 'true',
+            'include_groups': 'true',
+            'include_inbox_timelines': 'true',
+            'include_ext_media_color': 'true',
+            'supports_reactions': 'true',
+            'include_ext_edit_control': 'true',
+            'include_ext_business_affiliations_label': 'true',
+            'ext': 'mediaColor,altText,mediaStats,highlightedLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl',
+        }
+
+        response = requests.get(
+            'https://twitter.com/i/api/1.1/dm/inbox_initial_state.json',
+            params=params,
+            cookies=self.cookies,
+            headers=self.headers
+        )
+
+        return response.json().get("inbox_initial_state").get("inbox_timelines").get("trusted").get("min_entry_id")
+
+    def iterate_over_user_inbox_conversations(self, max_id: str, direct_message_time_treshold: datetime.datetime) -> list:
+        # This functions finds the users that requested in direct messages
+        # It just gives the users that send a direct message after direct_message_time_treshold
+        """
+        Outpu: {
+            screen_name: {
+                conversation_id: str
+            }
+        }
+        """
+        requesting_users = {}
+        while True:
+            params = {
+                'max_id': f'{max_id}',
+                'nsfw_filtering_enabled': 'false',
+                'include_profile_interstitial_type': '1',
+                'include_blocking': '1',
+                'include_blocked_by': '1',
+                'include_followed_by': '1',
+                'include_want_retweets': '1',
+                'include_mute_edge': '1',
+                'include_can_dm': '1',
+                'include_can_media_tag': '1',
+                'include_ext_is_blue_verified': '1',
+                'include_ext_verified_type': '1',
+                'include_ext_profile_image_shape': '1',
+                'skip_status': '1',
+                'dm_secret_conversations_enabled': 'false',
+                'krs_registration_enabled': 'true',
+                'cards_platform': 'Web-12',
+                'include_cards': '1',
+                'include_ext_alt_text': 'true',
+                'include_ext_limited_action_results': 'true',
+                'include_quote_count': 'true',
+                'include_reply_count': '1',
+                'tweet_mode': 'extended',
+                'include_ext_views': 'true',
+                'dm_users': 'false',
+                'include_groups': 'true',
+                'include_inbox_timelines': 'true',
+                'include_ext_media_color': 'true',
+                'supports_reactions': 'true',
+                'include_ext_edit_control': 'true',
+                'ext': 'mediaColor,altText,businessAffiliationsLabel,mediaStats,highlightedLabel,voiceInfo,birdwatchPivot,superFollowMetadata,unmentionInfo,editControl',
+            }
+
+            response = requests.get(
+                'https://twitter.com/i/api/1.1/dm/inbox_timeline/trusted.json',
+                params=params,
+                cookies=self.cookies,
+                headers=self.headers,
+            )
+
+            if response.status_code != http.HTTPStatus.OK:
+                raise Exception("Request failed to get directs with status code: " + str(response.status_code))
+
+            max_id = response.json().get("inbox_timeline", {}).get("min_entry_id")
+            if not max_id: break
+
+            users = response.json().get("inbox_timeline", {}).get("users", [])
+            for conversation in response.json().get("inbox_timeline", {}).get("conversations", {}):
+                conversation_timestamp = response.json().get("inbox_timeline", {}).get("conversations", []).get(conversation).get("sort_timestamp")
+                if conversation_timestamp and self.epoch_time_convertor(conversation_timestamp) > direct_message_time_treshold:
+                    for participant in response.json().get("inbox_timeline", {}).get("conversations", []).get(conversation).get("participants"):
+                        screen_name = users.get(participant.get("user_id"), {}).get("screen_name")
+                        if not requesting_users.get(screen_name):
+                            requesting_users[screen_name] = {
+                                "conversation_id": response.json().get("inbox_timeline", {}).get("conversations", {}).get(conversation).get("conversation_id")
+                            }
+
+            # Same thing with iterating over every message
+            # This solution does not get conversations that are just message from the account owner
+            # for i in response.json().get("inbox_timeline", {}).get("entries", []):
+            #     msg_time = i.get("message", {}).get("message_data", {}).get("time")
+            #     if msg_time and self.epoch_time_convertor(msg_time) > direct_message_time_treshold:
+            #         screen_name = users.get(i.get("message", {}).get("message_data", {}).get("sender_id"), {}).get("screen_name")
+            #         usernames[screen_name] = {
+            #             "screen_name": screen_name,
+            #             "message_id": i.get("message", {}).get("id")
+            #         }
+
+        return requesting_users
+
+    def get_direct_usernames(self, direct_message_time_treshold: datetime.datetime = datetime.datetime(2024, 1, 1)) -> list:
+        entry_id = self.get_inbox_initial_state()
+        return self.iterate_over_user_inbox_conversations(entry_id, direct_message_time_treshold)
+
     def get_user_directs_sender_ids(self) -> dict:
         # Old
         sender_ids = {}
@@ -495,3 +620,6 @@ class Twitter():
     def generate_result_tweet_text(self) -> str:
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
+
+    def epoch_time_convertor(self, epoch_time: int) -> datetime:
+        return datetime.datetime.fromtimestamp(int(epoch_time) // 1000)
