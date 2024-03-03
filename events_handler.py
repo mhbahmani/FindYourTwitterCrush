@@ -34,7 +34,7 @@ NUMBER_OF_RESULTS = 12
 def most_liking_users(username: str, tweet_id, type: str = "t"):
 #     if type == "c":
 #         try:
-#             liking_users, likes_avg = twitter_client.get_user_huge_fans(username)
+#             liking_users, likes_avg = twitter_client.get_user_most_liking_users(username)
 #         except Exception as e:
 #             logging.error(e)
 #             logging.error(username, tweet_id)
@@ -68,7 +68,7 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
 
     logging.info(f"Finding most liking users for {username}")
     try:
-        liking_users, likes_avg = twitter_client.get_user_huge_fans(username, NUMBER_OF_RESULTS)
+        liking_users, likes_avg = twitter_client.get_user_most_liking_users(username, NUMBER_OF_RESULTS)
     except Exception as e:
         logging.error(e)
         logging.error(username, tweet_id)
