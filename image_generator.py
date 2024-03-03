@@ -1,7 +1,7 @@
 from PIL import Image
 from PIL import ImageDraw, ImageFont
 
-from messages import MOST_LIKING_USERS_TITLE, MOST_LIKED_USERS_TITLE
+from src.messages import MOST_LIKING_USERS_TITLE, MOST_LIKED_USERS_TITLE
 
 import langdetect
 
@@ -13,6 +13,7 @@ import os
 
 
 OUTPUT_DIR = "merged_images"
+OUTPUT_WEB_SERVER_DIR = "static/merged_images"
 
 NUM_ROWS = 2
 IMAGE_BORDER = 300
@@ -21,7 +22,7 @@ IMAGE_X = 426
 IMAGE_Y = 420
 
 
-def merge_images(data: list, avg: float = -1, username: str = None, total_likes: int = -1) -> str:
+def merge_images(data: list, avg: float = -1, username: str = None, total_likes: int = -1, private: bool = False) -> str:
     """
     Output: Path of the merged image
     """
@@ -95,11 +96,9 @@ def merge_images(data: list, avg: float = -1, username: str = None, total_likes:
     if total_likes != -1: 
         image_draw.text((X/2 - 200, Y - 100), f"Total likes: {total_likes}", fill=(0,0,0), font=font)
 
-    if avg != -1:
-        output_path = f"{OUTPUT_DIR}/{username}-liking.jpg"
-    else:
-        output_path = f"{OUTPUT_DIR}/{username}-liked.jpg"
-    merged_image.save(output_path,"JPEG")
+    output_path = retrieve_image_path(username, "liking" if avg != -1 else "liked", private)
+
+    merged_image.save(output_path, "JPEG")
 
     # merged_image.show()
     cleanup_image(key, TOTAL_IMAGES)
@@ -129,15 +128,14 @@ def cleanup_image(key: str, TOTAL_IMAGES: int):
         os.remove(f"images/{key}-{i}.jpg")
 
 
-def retrieve_image_path(username: str, type: str):
+def retrieve_image_path(username: str, type: str, private: bool = False):
     if type == "liking":
-        path = f"{OUTPUT_DIR}/{username}-liking.jpg"
-        if os.path.exists(path):
-            return path
+        if not private:
+            return f"{OUTPUT_DIR}/{username}-liking.jpg"
+        # Add a random string as key to the file name to prevent some one access to the file by guessing the file name
+        return f"{OUTPUT_WEB_SERVER_DIR}/{username}-liking-{''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(50))}.jpg"
     elif type == "liked":
-        path = f"{OUTPUT_DIR}/{username}-liked.jpg"
-        if os.path.exists(path):
-            return path
-
-# items = [[5, 'lunatic_amib', 'http://pbs.twimg.com/profile_images/1627023157772054529/-RMzGzua.jpg', '*فارسی'], [4, 'Erf__Kha', 'https://pbs.twimg.com/profile_images/1636885496835063808/CcVomPqU_400x400.jpg', 'لاس نزن انقد'], [3, 'MehranMontazer', 'http://pbs.twimg.com/profile_images/1606339570173353984/kIbhlC3p.jpg', 'MehranMontazer'], [3, 'ghalbe_abi', 'http://pbs.twimg.com/profile_images/1616080056111202306/NiiNs3my.jpg', 'ghalbe_abi'], [3, 'iamAMT1', 'http://pbs.twimg.com/profile_images/1628855496412102656/oQmQr062.jpg', 'iamAMT1'], [3, 'Milad123454321', 'http://pbs.twimg.com/profile_images/1261047570333405186/FGd75LF4.jpg', 'Milad123454321'], [3, 'A81829', 'http://pbs.twimg.com/profile_images/1439595648878272525/qCtkEj1d.jpg', 'A81829'], [3, 'farida__qp', 'http://pbs.twimg.com/profile_images/1562369411809509376/jLcOILIC.jpg', 'لاس کار بدیه'], [2, 'SkySep999', 'http://pbs.twimg.com/profile_images/1614362795520180226/kb5GJCtc.jpg', 'SkySep999'], [2, 'mobiiinaaa', 'https://pbs.twimg.com/profile_images/1636817146780041216/Sk2KHU-x_400x400.jpg', 'mobiiinaaa'], [2, 'armitajli', 'http://pbs.twimg.com/profile_images/1606269624701550592/wS7BlzY_.jpg', 'armitajli'], [2, 'AFarsangi', 'http://pbs.twimg.com/profile_images/1573223251949637635/y8pBBKMB.jpg', 'AFarsangi']]
-# merge_images(items, total_likes=2100)
+        if not private:
+            return f"{OUTPUT_DIR}/{username}-liked.jpg"
+        # Add a random string as key to the file name to prevent some one access to the file by guessing the file name
+        return f"{OUTPUT_WEB_SERVER_DIR}/{username}-liked-{''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(50))}.jpg"
