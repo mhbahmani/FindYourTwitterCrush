@@ -12,7 +12,7 @@ import string
 import os
 
 
-OUTPUT_DIR="merged_images"
+OUTPUT_DIR = "merged_images"
 
 NUM_ROWS = 2
 IMAGE_BORDER = 300
@@ -21,7 +21,10 @@ IMAGE_X = 426
 IMAGE_Y = 420
 
 
-def merge_images(data: list, avg: float = -1, username: str = None, total_likes: int = -1):
+def merge_images(data: list, avg: float = -1, username: str = None, total_likes: int = -1) -> str:
+    """
+    Output: Path of the merged image
+    """
     TOTAL_IMAGES = len(data)
 
     TITLE_LINE_LENGTH = 120
