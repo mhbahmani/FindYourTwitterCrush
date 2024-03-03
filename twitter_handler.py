@@ -60,9 +60,8 @@ class Twitter():
 
 
     def get_replied_users(self, tweet_id: int, tweet_author_username: str = None) -> list:
-        repliers = set()
         repliers_with_tweet_id = {}
-        if tweet_author_username: repliers.add(tweet_author_username)
+        # if tweet_author_username: repliers.add(tweet_author_username)
         cursor = None
         # self.dump_json("tweet.json ", tweet)
 
@@ -81,17 +80,18 @@ class Twitter():
                             ]
                 else:
                     screen_name = entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
-                    repliers_with_tweet_id[screen_name] = [
-                        screen_name,
-                        entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
-                        str(REQUEST_TYPE.TWEET)
-                    ]
+                    if not repliers_with_tweet_id.get(screen_name):
+                        repliers_with_tweet_id[screen_name] = [
+                            screen_name,
+                            entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
+                            str(REQUEST_TYPE.TWEET)
+                        ]
                     
             if entries[-1] and entries[-1].get("content", {}).get("itemContent", {}).get("cursorType") == "Bottom":
                 cursor = entries[-1].get("content", {}).get("itemContent", {}).get("value")
             else: break
 
-        return repliers
+        return repliers_with_tweet_id
 
     def dump_json(self, filename: str, content: dict):
         import json
