@@ -27,6 +27,9 @@ DOUBLE_QUOTE_CHAR = "\""
 FETCH_LIKES_COUNT = 150
 LIKES_PER_EACH_REQUEST = 100
 
+NUM_OF_LOOKED_UP_TWEETS = 500
+TWEET_LIKE_TRESHOLD = 200
+
 
 class REQUEST_TYPE(Enum):
     DIRECT = "d"
@@ -234,6 +237,9 @@ class Twitter():
         else: raise Exception("Tweet not found in the entries")
         return datetime.datetime.strptime(date_str, "%a %b %d %H:%M:%S %z %Y").replace(tzinfo=UTC) 
 
+    def convert_tweet_created_at_to_datetiem(self, created_at: str) -> datetime:
+        return datetime.datetime.strptime(created_at, "%a %b %d %H:%M:%S %z %Y").replace(tzinfo=UTC)
+
     def get_user_by_screen_name(self, screen_name: str) -> dict:
         params = {
             'include_ext_is_blue_verified': '1',
@@ -264,113 +270,130 @@ class Twitter():
         return tweet_info.get("user_results", {}).get("result", {}).get("legacy", {})
 
     def get_user_tweets(self, user_id: str) -> list:
-        # Old
         """
-            outputs: [{id: , text: }]
+            Output: [tweet_id, ...]
         """
-        params = {
-            'max_results': 100,
-            'exclude': 'replies,retweets',
-            'tweet.fields': 'created_at'
-        }
-        tweets = []
+        tweet_ids = []
+        cursor = None
         while True:
-            response = requests.get(f'https://api.twitter.com/2/users/{user_id}/tweets', headers=self.headers, params=params)
-            if response.status_code == TOO_MANY_REQUESTS:
-                logging.info("Wait in get_user_tweets")
-                self.update_headers()
-                time.sleep(2 * 60)
-                logging.info("Retry in get_user_tweets")
-                continue
-            tweets += response.json().get('data', [])
-            logging.info(f"tweets {len(tweets)}")
-            next_token = response.json().get('meta', {}).get("next_token")
-            if not next_token: break
-            # Turn str date to datetime
-            last_tweet_create_date = datetime.datetime.strptime(tweets[-1].get('created_at'), "%Y-%m-%dT%H:%M:%S.%fZ")
-            if tweets and last_tweet_create_date < datetime.datetime.now() - datetime.timedelta(days=365) \
-            or len(tweets) >= 299: break
-            params['pagination_token'] = next_token
-            time.sleep(5)
-        return tweets
-
-    def get_tweet_likes(self, tweet_id: str) -> list:
-        # Old
-        # logging.info(tweet_id)
-        params = {
-            'max_results': 100,
-            'user.fields': 'name,profile_image_url,username'
-        }
-        response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
-        if response.status_code == TOO_MANY_REQUESTS:
-            raise Exception("Too many requests")
-        # if errors := response.json().get('errors'):
-        #     return errors
-        liking_users = []
-        liking_users += response.json().get('data', [])
-        token_num = self.token_number
-        self.update_headers()
-        next_token = response.json().get('meta', {}).get("next_token")
-        while next_token:
             params = {
-                'max_results': 100,
-                'user.fields': 'name,profile_image_url,username',
-                'pagination_token': next_token,
+                'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":20,\"includePromotedContent\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withVoice\":true,\"withV2Timeline\":true}}",
+                'features': '{"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}',
             }
-            logging.info(f"tweet likes {len(liking_users)}")
-            response = requests.get(f"https://api.twitter.com/2/tweets/{tweet_id}/liking_users", headers=self.headers, params=params)
-            if response.status_code == TOO_MANY_REQUESTS:
-                logging.info("Wait in get_tweet_likes")
-                self.update_headers()
-                sleep(30)
-                logging.info("Retrying")
-                continue
-            liking_users += response.json().get('data', [])
-            next_token = response.json().get('meta', {}).get("next_token")
-            if not next_token: break
-            time.sleep(5)
-        self.update_headers(token_num)
-        return liking_users
 
-    def get_user_huge_fans(self, username: str) -> list:
-        # Old
+            response = requests.get(
+                'https://twitter.com/i/api/graphql/WwS-a6hAhqAAe-gItelmHA/UserTweets',
+                params=params,
+                cookies=self.cookies,
+                headers=self.headers,
+            )
+
+            if response.status_code != http.HTTPStatus.OK:
+                raise Exception("Request failed to get user tweets with status code: " + str(response.status_code))
+            
+            entries = response.json().get("data", {}).get("user", {}).get("result", {}).get("timeline_v2", {}).get("timeline", {}).get("instructions", [{"entries": []}])[-1].get("entries", [])
+            for entry in entries:
+                if not "tweet" in entry.get("entryId"):
+                    continue
+                tweet_data = entry.get("content", {}).get("itemContent", {}).get("tweet_results").get("result", {})
+                if not tweet_data.get("legacy").get("favorite_count") \
+                    or tweet_data.get("legacy").get("favorite_count") > TWEET_LIKE_TRESHOLD:
+                    # Tweet has no faves or it's a retweet or has more than TWEET_LIKE_TRESHOLD likes
+                    continue
+                if self.convert_tweet_created_at_to_datetiem(tweet_data.get("legacy").get("created_at")) \
+                    < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=20):
+                    return tweet_ids
+                tweet_ids.append(tweet_data.get("rest_id"))
+
+            if not entries: break
+
+            cursor = entries[-1].get("content", {}).get("value")
+            if not cursor: break
+
+            if len(tweet_ids) >= NUM_OF_LOOKED_UP_TWEETS: break
+
+        return tweet_ids
+
+    def get_tweet_liking_users(self, tweet_id: str) -> list:
+        """
+        Output: {
+            screen_name: {
+                name: ,
+                profile_image_url: ,
+                count:
+        }
+        """
+        liked_users = {}
+        cursor = None
+        while True:
+            params = {
+                'variables': f"{{\"tweetId\":\"{tweet_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":100,\"includePromotedContent\":true}}",
+                'features': '{"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}',
+            }
+
+            response = requests.get(
+                'https://twitter.com/i/api/graphql/-di098ULkVEOqtzrQGHAVg/Favoriters',
+                params=params,
+                cookies=self.cookies,
+                headers=self.headers,
+            )
+
+            if response.status_code != http.HTTPStatus.OK:
+                raise Exception("Request failed to get tweet likes with status code: " + str(response.status_code))
+            
+            entries = response.json().get("data", {}).get("favoriters_timeline", {}).get("timeline", {}).get("instructions", [{"entries": []}])[-1].get("entries", [])
+            for entry in entries:
+                if not "user" in entry.get("entryId"):
+                    continue
+                user = entry.get("content", {}).get("itemContent", {}).get("user_results", {}).get("result", {})
+                screen_name = user.get("legacy").get("screen_name")
+                liked_users[user.get("legacy").get("screen_name")] = {
+                    "name": user.get("name"),
+                    "profile_image_url": self.fix_image_address(user.get("legacy").get("profile_image_url_https")),
+                }
+
+            if not entries: break
+
+            if entries[-1].get("content", {}).get("cursorType") == "Bottom":
+                cursor = entries[-1].get("content", {}).get("value")
+            if not cursor: break
+
+        return liked_users
+
+    def get_user_most_liking_users(self, username: str, number_of_results: int = 12) -> list:
         user_id = self.get_user_id_by_username(username)
         tweets = self.get_user_tweets(user_id)
 
         liking_users_data = {}
         num_tweets = len(tweets)
         counter = total_likes = 0
-        for tweet in tweets:
-            logging.info(f"{int(counter / len(tweets) * 100)}% has been processed {tweet.get('id')} {username}")
-            # if counter % 20 == 19:
-            #     self.update_headers()
-            #     logging.info("Changing token and waiting 30 seconds")
-            #     sleep(30)
+        for tweet_id in tweets:
+            logging.info(f"{int(counter / len(tweets) * 100)}% has been processed {tweet_id} {username}")
             while True:
                 try:
-                    likes = self.get_tweet_likes(tweet.get('id'))
+                    liking_users = self.get_tweet_liking_users(tweet_id)
                     break
                 except Exception as e:
                     logging.error(e)
-                    self.update_headers()
-                    logging.info("Changing token and waiting 5 minutes")
-                    sleep(30)
+                    sleep_time = 30
+                    logging.info(f"Waiting {sleep_time} sconds")
+                    sleep(sleep_time)
                     logging.info("Trying again")
-            counter += 1
-            total_likes += len(likes)
-            # logging.info(counter)
-            for like in likes:
-                liking_users_data[like.get('username')] = {
-                    'name': like.get('name'),
-                    "profile_image_url": self.fix_image_address(like.get('profile_image_url')),
-                    "count": liking_users_data.get(like.get('username'), {"count": 0}).get("count", 0) + 1
-                }
-            sleep(4)
 
-        most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"))[-12:])
+            counter += 1
+            total_likes += len(liking_users)
+            for screen_name in liking_users:
+                liking_users_data[screen_name] = {
+                    'name': screen_name,
+                    "profile_image_url": liking_users[screen_name].get("profile_image_url"),
+                    "count": liking_users_data.get(screen_name, {"count": 0}).get("count", 0) + 1
+                }
+            sleep(5)
+
+        most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"), reverse=True)[:number_of_results])
         for _username in most_liking_users.keys():
             most_liking_users[_username]["count"] /= num_tweets * 0.01
-        # logging.info(res)
+
         return most_liking_users, total_likes / num_tweets
 
     def get_users_by_user_id_list(self, user_ids: list) -> str:
