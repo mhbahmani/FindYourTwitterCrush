@@ -1,6 +1,6 @@
-from twitter_handler import Twitter
-from redis_handler import Redis
-from db import DB
+from src.twitter_handler import Twitter
+from src.redis_handler import Redis
+from src.db import DB
 
 import time
 

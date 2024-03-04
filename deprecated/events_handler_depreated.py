@@ -1,10 +1,10 @@
-from twitter_handler import Twitter
-from redis_handler import Redis
-from image_generator import merge_images, retrieve_image_path
+from src.twitter_handler import Twitter
+from src.redis_handler import Redis
+from src.image_generator import merge_images, retrieve_image_path
 
 from decouple import config
 
-from db import DB
+from src.db import DB
 
 import time
 import logging

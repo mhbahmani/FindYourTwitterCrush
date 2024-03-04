@@ -269,7 +269,7 @@ class Twitter():
             tweet_info = liked_tweet.get("content").get("itemContent").get("tweet_results", {}).get("result", {}).get("core", {})
         return tweet_info.get("user_results", {}).get("result", {}).get("legacy", {})
 
-    def get_user_tweets(self, user_id: str) -> list:
+    def get_user_tweets(self, user_id: str, tweet_time_days_treshold: int = None) -> list:
         """
             Output: [tweet_id, ...]
         """
@@ -277,7 +277,7 @@ class Twitter():
         cursor = None
         while True:
             params = {
-                'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":20,\"includePromotedContent\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withVoice\":true,\"withV2Timeline\":true}}",
+                'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":100,\"includePromotedContent\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withVoice\":true,\"withV2Timeline\":true}}",
                 'features': '{"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}',
             }
 
@@ -296,12 +296,14 @@ class Twitter():
                 if not "tweet" in entry.get("entryId"):
                     continue
                 tweet_data = entry.get("content", {}).get("itemContent", {}).get("tweet_results").get("result", {})
-                if not tweet_data.get("legacy").get("favorite_count") \
+                if tweet_data.get("tweet") or \
+                    not tweet_data.get("legacy").get("favorite_count") \
                     or tweet_data.get("legacy").get("favorite_count") > TWEET_LIKE_TRESHOLD:
                     # Tweet has no faves or it's a retweet or has more than TWEET_LIKE_TRESHOLD likes
                     continue
-                if self.convert_tweet_created_at_to_datetiem(tweet_data.get("legacy").get("created_at")) \
-                    < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=20):
+                if tweet_time_days_treshold and \
+                    self.convert_tweet_created_at_to_datetiem(tweet_data.get("legacy").get("created_at")) \
+                    < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=tweet_time_days_treshold):
                     return tweet_ids
                 tweet_ids.append(tweet_data.get("rest_id"))
 
@@ -346,9 +348,8 @@ class Twitter():
                 if not "user" in entry.get("entryId"):
                     continue
                 user = entry.get("content", {}).get("itemContent", {}).get("user_results", {}).get("result", {})
-                screen_name = user.get("legacy").get("screen_name")
                 liked_users[user.get("legacy").get("screen_name")] = {
-                    "name": user.get("name"),
+                    "name": user.get("legacy").get("name"),
                     "profile_image_url": self.fix_image_address(user.get("legacy").get("profile_image_url_https")),
                 }
 
@@ -362,7 +363,7 @@ class Twitter():
 
     def get_user_most_liking_users(self, username: str, number_of_results: int = 12) -> list:
         user_id = self.get_user_id_by_username(username)
-        tweets = self.get_user_tweets(user_id)
+        tweets = self.get_user_tweets(user_id, 365)
 
         liking_users_data = {}
         num_tweets = len(tweets)
@@ -381,10 +382,11 @@ class Twitter():
                     logging.info("Trying again")
 
             counter += 1
+            print(len(liking_users))
             total_likes += len(liking_users)
             for screen_name in liking_users:
                 liking_users_data[screen_name] = {
-                    'name': screen_name,
+                    'name': liking_users[screen_name].get("name"),
                     "profile_image_url": liking_users[screen_name].get("profile_image_url"),
                     "count": liking_users_data.get(screen_name, {"count": 0}).get("count", 0) + 1
                 }

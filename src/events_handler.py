@@ -1,11 +1,11 @@
-from twitter_handler import Twitter
-from redis_handler import Redis
-from image_generator import merge_images
+from src.twitter_handler import Twitter
+from src.redis_handler import Redis
+from src.image_generator import merge_images
 from src.utils import generate_private_output_address
 
 from decouple import config
 
-from db import DB
+from src.db import DB
 
 import time
 import logging

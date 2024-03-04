@@ -15,6 +15,9 @@ import os
 OUTPUT_DIR = "merged_images"
 OUTPUT_WEB_SERVER_DIR = "static/merged_images"
 
+FA_FONT_PATH = "templates/kamran.ttf"
+EN_FONT_PATH = "templates/baloo.ttf"
+
 NUM_ROWS = 2
 IMAGE_BORDER = 300
 
@@ -22,7 +25,7 @@ IMAGE_X = 426
 IMAGE_Y = 420
 
 
-def merge_images(data: list, avg: float = -1, username: str = None, total_likes: int = -1, private: bool = False) -> str:
+def merge_images(data: list, likes_avg: float = -1, username: str = None, total_likes: int = -1, private: bool = False) -> str:
     """
     Output: Path of the merged image
     """
@@ -57,8 +60,9 @@ def merge_images(data: list, avg: float = -1, username: str = None, total_likes:
     Y += 100 # for average and total likes  
 
     merged_image = Image.new('RGB',(X, Y), (250,250,250))
-    title = MOST_LIKING_USERS_TITLE if avg != -1 else MOST_LIKED_USERS_TITLE
-    font = ImageFont.truetype("kamran.ttf", 70)
+
+    title = MOST_LIKING_USERS_TITLE if likes_avg != -1 else MOST_LIKED_USERS_TITLE
+    font = ImageFont.truetype(FA_FONT_PATH, 70)
     image_draw = ImageDraw.Draw(merged_image)
     image_draw.text((X/2 - len(title) / 2 * 20, TITLE_LINE_LENGTH / 2 - 20), title, fill=(0,0,0), font=font)
     for i in range(len(images)):
@@ -68,13 +72,13 @@ def merge_images(data: list, avg: float = -1, username: str = None, total_likes:
         draw.ellipse((0, 0) + images[i].size, fill=255)
         merged_image.paste(images[i], images_location[i], mask)
     
-    en_font = ImageFont.truetype("baloo.ttf", 40)
-    pr_font = ImageFont.truetype("kamran.ttf", 50)
+    en_font = ImageFont.truetype(EN_FONT_PATH, 40)
+    pr_font = ImageFont.truetype(FA_FONT_PATH, 50)
     image_draw = ImageDraw.Draw(merged_image)
-    template_text = "{} - {}%" if avg != -1 else "{} - {}"
+    template_text = "{} - {}%" if likes_avg != -1 else "{} - {}"
     for i in range(len(images)):
         # Write account name and score middle of the image
-        if avg == -1:
+        if likes_avg == -1:
             text = template_text.format(data[i][1], data[i][0])
         else:
             text = template_text.format(data[i][1], '{:.1f}'.format(data[i][0]))
@@ -89,14 +93,14 @@ def merge_images(data: list, avg: float = -1, username: str = None, total_likes:
         except:
             image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(data[i][3]) / 2 * 25), images_location[i][1] + 480), f"{data[i][3]}", fill=(0,0,0), font=en_font)
 
-    font = ImageFont.truetype("baloo.ttf", 60)
-    if avg != -1:
+    font = ImageFont.truetype(EN_FONT_PATH, 60)
+    if likes_avg != -1:
         # Write average score in the buttom middle of the image
-        image_draw.text((X/2 - 170, Y - 100), f"Average: {'{:.1f}'.format(avg)}", fill=(0,0,0), font=font)
+        image_draw.text((X/2 - 170, Y - 100), f"Average: {'{:.1f}'.format(likes_avg)}", fill=(0,0,0), font=font)
     if total_likes != -1: 
         image_draw.text((X/2 - 200, Y - 100), f"Total likes: {total_likes}", fill=(0,0,0), font=font)
 
-    output_path = retrieve_image_path(username, "liking" if avg != -1 else "liked", private)
+    output_path = retrieve_image_path(username, "liking" if likes_avg != -1 else "liked", private)
 
     merged_image.save(output_path, "JPEG")
 
