@@ -83,7 +83,7 @@ class Twitter():
                             repliers_with_tweet_id[screen_name] = [
                                 screen_name,
                                 _item.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
-                                str(REQUEST_TYPE.TWEET)
+                                REQUEST_TYPE.TWEET.value
                             ]
                 else:
                     screen_name = entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
@@ -91,7 +91,7 @@ class Twitter():
                         repliers_with_tweet_id[screen_name] = [
                             screen_name,
                             entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
-                            str(REQUEST_TYPE.TWEET)
+                            REQUEST_TYPE.TWEET.value
                         ]
                     
             if entries[-1] and entries[-1].get("content", {}).get("itemContent", {}).get("cursorType") == "Bottom":
@@ -613,7 +613,8 @@ class Twitter():
             users = response.json().get("inbox_timeline", {}).get("users", [])
             for conversation in response.json().get("inbox_timeline", {}).get("conversations", {}):
                 conversation_timestamp = response.json().get("inbox_timeline", {}).get("conversations", []).get(conversation).get("sort_timestamp")
-                if conversation_timestamp and self.epoch_time_convertor(conversation_timestamp) > direct_message_time_treshold:
+                if direct_message_time_treshold and \
+                    conversation_timestamp and self.epoch_time_convertor(conversation_timestamp) > direct_message_time_treshold:
                     for participant in response.json().get("inbox_timeline", {}).get("conversations", []).get(conversation).get("participants"):
                         screen_name = users.get(participant.get("user_id"), {}).get("screen_name")
                         if not requesting_users.get(screen_name):
@@ -634,7 +635,7 @@ class Twitter():
 
         return requesting_users
 
-    def get_direct_usernames(self, direct_message_time_treshold: datetime.datetime = datetime.datetime(2024, 1, 1)) -> list:
+    def get_direct_usernames(self, direct_message_time_treshold: datetime.datetime = datetime.datetime(2023, 1, 1)) -> list:
         entry_id = self.get_inbox_initial_state()
         return self.iterate_over_user_inbox_conversations(entry_id, direct_message_time_treshold)
 
