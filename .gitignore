@@ -6,6 +6,7 @@ config/twitter_bot.json
 config/twitter_backup.json
 test.py
 tmp/*
+tmp
 .vscode
 
 ### Python ###
