@@ -2,6 +2,7 @@ from src.twitter_handler import Twitter
 from src.redis_handler import Redis
 from src.db import DB
 
+import datetime
 import time
 
 
@@ -31,14 +32,14 @@ def load_handled_users():
 
 def check_for_new_requests_on_most_liking():
     in_progress_usernames = redis_client.get_all_progressing_events("liking_users")
-    repliers = client.get_tweet_replies_with_tweepy(LIKING_USERS_SRC_TWEET_ID)
+    repliers = client.get_replied_users(LIKING_USERS_SRC_TWEET_ID)
     for screen_name in repliers:
         if screen_name in handled_users_liking or screen_name in in_progress_usernames: continue
         print("* Adding", screen_name, "to queue liking_users, tweet_id", repliers.get(screen_name)[1])
         redis_client.add_event_to_queue(repliers[screen_name], queue="liking_users")
         handled_users_liking.add(screen_name)
 
-    direct_requests = client.get_direct_usernames()
+    direct_requests = client.get_direct_usernames(datetime.datetime(2024, 3, 10))
     for screen_name in direct_requests:
         if screen_name in handled_users_liking or screen_name in in_progress_usernames: continue
         print("* Adding", screen_name, "request to queue liking_users, conversation id:", direct_requests[screen_name].get("conversation_id"))
@@ -54,7 +55,7 @@ def check_for_new_requests_on_likes():
         redis_client.add_event_to_queue(repliers[screen_name], queue="liked_users")
         handled_users_liked.add(screen_name)
 
-    direct_requests = client.get_direct_usernames()
+    direct_requests = client.get_direct_usernames(datetime.datetime(2024, 3, 10))
     for screen_name in direct_requests:
         if screen_name in handled_users_liked or screen_name in in_progress_usernames: continue
         print("= Adding", screen_name, "request to queue liked_users, conversation id:", direct_requests[screen_name].get("conversation_id"))
