@@ -35,6 +35,8 @@ api_id = config("CLIENT_API_ID")
 api_hash = config("CLIENT_API_HASH")
 client = TelegramClient('anon_crush', api_id, api_hash)
 
+NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_IDS").split(",")]
+
 handled_users_liking = set() # List of usersnames
 handled_users_liked = set() # List of usernames
 
@@ -63,7 +65,8 @@ async def username_handler(event):
     # print(text)
     user_id = event.original_update.message.peer_id.user_id
     # print(redis_client.get_user_request_count(str(user_id), "liked_users"))
-    if redis_client.get_user_request_count(str(user_id), "liked_users") >= REQUEST_LIMIT:
+    if not user_id in NO_LIMIT_USER_IDS \
+        and redis_client.get_user_request_count(str(user_id), "liked_users") >= REQUEST_LIMIT:
         await client.send_message(user_id, too_many_requests_msg.format(REQUEST_LIMIT))
         return
 
