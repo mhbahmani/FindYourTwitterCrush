@@ -2,6 +2,7 @@ from src.twitter_handler import Twitter
 from src.redis_handler import Redis
 from src.image_generator import merge_images, check_output_image_is_present
 from src.utils import generate_private_output_address
+from main_telegram_handler import send_output
 
 from decouple import config
 
@@ -150,8 +151,12 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
                 output_address = generate_private_output_address(cached_path)
                 twitter_client.send_result_in_direct(user_id, output_address)
                 logging.info(f"Send result in direct for {username} in {cached_path}")
+            elif type == "b":
+                user_id = tweet_id
+                # loop.run_until_complete(send_output(user_id, cached_path))
+                redis_client.add_event_to_queue([username, user_id, cached_path], queue="liked_users_done")
             else:
-                twitter_client.tweet_result(cached_path, tweet_id)
+                # twitter_client.reply_output_in_reply(cached_path, tweet_id)
                 logging.info(f"Tweeted result for {username} in {cached_path}")
             return
 
@@ -188,8 +193,12 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
         output_address = generate_private_output_address(image_path)
         twitter_client.send_result_in_direct(user_id, output_address)
         logging.info(f"Send result in direct for {username} in {image_path}")
+    elif type == "b":
+        user_id = tweet_id
+        # loop.run_until_complete(send_output(user_id, image_path))
+        redis_client.add_event_to_queue([username, user_id, image_path], queue="liked_users_done")
     else:
-        twitter_client.tweet_result(image_path, tweet_id)
+        # twitter_client.reply_output_in_reply(image_path, tweet_id)
         logging.info(f"result for {username} in {image_path} tweeted")
 
 # ACTION = "liking_users"
