@@ -101,8 +101,7 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
         logging.info(f"Send result in direct for {username} in {image_path}")
     else:
         twitter_client.tweet_result(image_path, tweet_id)
-        logging.info(f"Tweeted result for {username} in {image_path}")
-    
+        logging.info(f"result for {username} in {image_path} tweeted")
 
 def most_liked_users(username: str, tweet_id, type: str = "t"):
     # if type == "c":
@@ -174,8 +173,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
         logging.info(f"Send result in direct for {username} in {image_path}")
     else:
         twitter_client.tweet_result(image_path, tweet_id)
-        logging.info(f"Tweeted result for {username} in {image_path}")
-
+        logging.info(f"result for {username} in {image_path} tweeted")
 
 # ACTION = "liking_users"
 ACTION = "liked_users"
