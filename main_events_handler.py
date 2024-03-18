@@ -2,7 +2,6 @@ from src.twitter_handler import Twitter
 from src.redis_handler import Redis
 from src.image_generator import merge_images, check_output_image_is_present
 from src.utils import generate_private_output_address
-from main_telegram_handler import send_output
 
 from decouple import config
 
