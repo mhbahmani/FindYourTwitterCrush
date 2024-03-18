@@ -1,9 +1,6 @@
-import requests
 from telethon import TelegramClient, events
-import urllib.request
 from decouple import config
-from http.client import TOO_MANY_REQUESTS
-from time import sleep
+
 from src.redis_handler import Redis
 from src.db import DB
 from src.utils import generate_result_tweet_text
@@ -13,7 +10,6 @@ from src.messages import (
     request_accepted_msg,
     already_got_your_request_msg
 )
-
 
 import re
 import logging
@@ -76,9 +72,6 @@ async def send_output(user_id, image_path):
     await client.start()
     await client.send_message(user_id, generate_result_tweet_text(), link_preview=False, file=image_path)
     await client.disconnect()
-    # async with TelegramClient('anon_crush-2', api_id, api_hash) as telegram_client:
-    #     await telegram_client.send_message(user_id, generate_result_tweet_text(), link_preview=False, file=image_path)
-    #     await telegram_client.disconnect()
 
 async def handle_outputs():
     while True:
