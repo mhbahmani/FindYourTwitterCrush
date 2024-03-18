@@ -6,10 +6,11 @@ pip install -r requirements.txt
 
 mkdir images
 mkdir merged_images
+mkdir -p statics/merged_images
 
 # Set the tweet id
-python listener.py
+python src/listener.py
 
 # Set the ACTION variable
-python events_handler.py
+python src/events_handler.py
 ```
