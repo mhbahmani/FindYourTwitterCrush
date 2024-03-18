@@ -143,3 +143,7 @@ def retrieve_image_path(username: str, type: str, private: bool = False):
             return f"{OUTPUT_DIR}/{username}-liked.jpg"
         # Add a random string as key to the file name to prevent some one access to the file by guessing the file name
         return f"{OUTPUT_WEB_SERVER_DIR}/{username}-liked-{''.join(random.choice(string.ascii_uppercase + string.digits) for _ in range(50))}.jpg"
+
+def check_output_image_is_present(username: str, type: str) -> str:
+    path = retrieve_image_path(username, type)
+    return path if os.path.exists(username) else None
