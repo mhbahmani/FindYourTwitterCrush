@@ -146,4 +146,4 @@ def retrieve_image_path(username: str, type: str, private: bool = False):
 
 def check_output_image_is_present(username: str, type: str) -> str:
     path = retrieve_image_path(username, type)
-    return path if os.path.exists(username) else None
+    return path if os.path.exists(path) else None
