@@ -14,6 +14,7 @@ pytz
 redis
 requests
 schedule
+Telethon==1.24.0
 tweepy
 urllib3
 zipp
