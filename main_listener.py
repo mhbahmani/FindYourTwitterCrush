@@ -7,9 +7,9 @@ import time
 
 
 client = Twitter()
-LIKING_USERS_SRC_TWEET_ID = 123
+LIKING_USERS_SRC_TWEET_ID = 1769757048814686227
 
-LIKES_SRC_TWEET_ID = 123
+LIKES_SRC_TWEET_ID = 1769757048814686227
 
 db_client = DB()
 redis_client = Redis()
@@ -62,8 +62,8 @@ def check_for_new_requests_on_likes():
     #     redis_client.add_event_to_queue([screen_name, str(direct_requests[screen_name].get('conversation_id')), "d"], queue="liked_users")
     #     handled_users_liked.add(screen_name)
 
-load_handled_users()
+# load_handled_users()
 while True:
     # check_for_new_requests_on_most_liking()
     check_for_new_requests_on_likes()
-    time.sleep(10 * 60)
+    time.sleep(5 * 60)
