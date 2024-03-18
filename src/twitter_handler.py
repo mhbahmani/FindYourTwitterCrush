@@ -70,16 +70,15 @@ class Twitter():
         repliers_with_tweet_id = {}
         # if tweet_author_username: repliers.add(tweet_author_username)
         cursor = None
-        # self.dump_json("tweet.json ", tweet)
 
         while True:
             tweet = self.get_tweet_info_by_id(tweet_id, cursor)
             entries = tweet.get("data", {}).get("threaded_conversation_with_injections_v2", {}).get("instructions")[0].get("entries", [])
             for entry in entries[:-1]:
-                if entry.get("content", {}).get("items", {}):
-                    for _item in entry.get("content", {}).get("items", {}):
+                if entry.get("content", {}).get("items"):
+                    for _item in entry.get("content", {}).get("items", []):
                         screen_name = _item.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
-                        if not repliers_with_tweet_id.get(screen_name):
+                        if screen_name and not repliers_with_tweet_id.get(screen_name):
                             repliers_with_tweet_id[screen_name] = [
                                 screen_name,
                                 _item.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
@@ -87,7 +86,7 @@ class Twitter():
                             ]
                 else:
                     screen_name = entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
-                    if not repliers_with_tweet_id.get(screen_name):
+                    if screen_name and not repliers_with_tweet_id.get(screen_name):
                         repliers_with_tweet_id[screen_name] = [
                             screen_name,
                             entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
@@ -222,7 +221,7 @@ class Twitter():
             'https://twitter.com/i/api/graphql/89OGj-X6Vddr9EbuwIEmgg/TweetDetail',
             params=params,
             cookies=self.cookies,
-            headers=self.headers,
+            headers=self.headers
         )
 
         return response.json()
