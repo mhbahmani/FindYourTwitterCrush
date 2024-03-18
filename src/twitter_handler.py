@@ -24,7 +24,7 @@ from decouple import config
 
 
 DOUBLE_QUOTE_CHAR = "\""
-FETCH_LIKES_COUNT = 150
+FETCH_LIKES_COUNT = 4000
 LIKES_PER_EACH_REQUEST = 100
 
 NUM_OF_LOOKED_UP_TWEETS = 500
@@ -143,7 +143,7 @@ class Twitter():
 
     def get_user_likes(self, user_id, username: str = None) -> dict:
         """
-        Outpu:
+        Output:
         {
             screen_name: {
                 name: ,
@@ -199,11 +199,12 @@ class Twitter():
                 print(last_tweet_date)
                 if last_tweet_date < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=356):
                     break
-            except:
-                print("Error in getting tweet date")
+            except Exception as e:
+                print(f"Error in getting tweet date {e}")
 
             if iteration_likes[-1].get("content", {}).get("cursorType") == "Bottom":
                 cursor = f'"{iteration_likes[-1].get("content", {}).get("value")}"'
+                sleep(5)
             else:
                 break
 
@@ -498,13 +499,16 @@ class Twitter():
         return most_liked_users, total_likes_count
 
     def tweet_result(self, image_path: str, tweet_id: str):  
-        uploaded_media = self.api.media_upload(image_path)
+        try:
+            uploaded_media = self.api.media_upload(image_path)
 
-        self.client.create_tweet(
-            text=self.generate_result_tweet_text(),
-            media_ids=[uploaded_media.media_id],
-            in_reply_to_tweet_id=tweet_id
-        )
+            self.client.create_tweet(
+                text=self.generate_result_tweet_text(),
+                media_ids=[uploaded_media.media_id],
+                in_reply_to_tweet_id=tweet_id
+            )
+        except Exception as e:
+            logging.error(f"Something went wront when tweeting results: {e}")
 
     def get_inbox_initial_state(self) -> list:
         params = {
