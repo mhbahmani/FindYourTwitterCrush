@@ -7,7 +7,12 @@ from time import sleep
 from src.redis_handler import Redis
 from src.db import DB
 from src.utils import generate_result_tweet_text
-from src.image_generator import check_output_image_is_present
+from src.messages import (
+    error_template,
+    too_many_requests_msg,
+    request_accepted_msg,
+    already_got_your_request_msg
+)
 
 
 import re
@@ -30,16 +35,6 @@ handled_users_liked = set() # List of usernames
 db_client = DB()
 redis_client = Redis()
 
-error_template = """
-تو یه پیام، لینک صفحه‌ی profileت رو برام بفرست. یه چیزی مثل این لینک:
-https://twitter.com/mh_bahmani
-"""
-request_accepted_msg = "✨ سلام، درخواستت رفت تو صف. به محض این که آماده بشه، برات می‌فرستمش😌"
-already_got_your_request_msg = """
-یا درخواستت ثبت شده و تو صفه و یا به لیمیت تعداد درخواست رسیدی.
-"""
-too_many_requests_msg = f"""
-بیشتر از {REQUEST_LIMIT} درخواست رو نمی‌تونی بدی و به سقف تعداد درخواست‌هاست رسیدی. فعلا صبر کن تا این سقف رو بیشتر کنم و بتونی دوباره درخواست بدی"""
 
 @client.on(events.NewMessage(pattern=r"/start"))
 async def start_handler(event):
@@ -53,7 +48,7 @@ async def username_handler(event):
     user_id = event.original_update.message.peer_id.user_id
     # print(redis_client.get_user_request_count(str(user_id), "liked_users"))
     if redis_client.get_user_request_count(str(user_id), "liked_users") >= REQUEST_LIMIT:
-        await client.send_message(user_id, too_many_requests_msg)
+        await client.send_message(user_id, too_many_requests_msg.format(REQUEST_LIMIT))
         return
     redis_client.increase_user_request_count(str(user_id), "liked_users")
 
