@@ -510,6 +510,63 @@ class Twitter():
         except Exception as e:
             logging.error(f"Something went wront when tweeting results: {e}")
 
+    def send_output_in_reply(self, image_path: str, tweet_id: str):
+        uploaded_media = self.api.media_upload(image_path)
+
+        json_data = {
+            'variables': {
+                'tweet_text': self.generate_result_tweet_text(),
+                'reply': {
+                    'in_reply_to_tweet_id': str(tweet_id),
+                    'exclude_reply_user_ids': [],
+                },
+                'batch_compose': 'BatchSubsequent',
+                'dark_request': False,
+                'media': {
+                    'media_entities': [
+                        {
+                            'media_id': str(uploaded_media.media_id),
+                            'tagged_users': [],
+                        },
+                    ],
+                    'possibly_sensitive': False,
+                },
+                'semantic_annotation_ids': [],
+            },
+            'features': {
+                'c9s_tweet_anatomy_moderator_badge_enabled': True,
+                'tweetypie_unmention_optimization_enabled': True,
+                'responsive_web_edit_tweet_api_enabled': True,
+                'graphql_is_translatable_rweb_tweet_is_translatable_enabled': True,
+                'view_counts_everywhere_api_enabled': True,
+                'longform_notetweets_consumption_enabled': True,
+                'responsive_web_twitter_article_tweet_consumption_enabled': True,
+                'tweet_awards_web_tipping_enabled': False,
+                'longform_notetweets_rich_text_read_enabled': True,
+                'longform_notetweets_inline_media_enabled': True,
+                'rweb_video_timestamps_enabled': True,
+                'responsive_web_graphql_exclude_directive_enabled': True,
+                'verified_phone_label_enabled': False,
+                'freedom_of_speech_not_reach_fetch_enabled': True,
+                'standardized_nudges_misinfo': True,
+                'tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled': True,
+                'responsive_web_graphql_skip_user_profile_image_extensions_enabled': False,
+                'responsive_web_graphql_timeline_navigation_enabled': True,
+                'responsive_web_enhance_cards_enabled': False,
+            },
+            'queryId': 'sgqau0P5BUJPMU_lgjpd_w',
+        }
+
+        response = requests.post(
+            'https://twitter.com/i/api/graphql/sgqau0P5BUJPMU_lgjpd_w/CreateTweet',
+            cookies=self.bot_cookies,
+            headers=self.bot_headers,
+            json=json_data,
+        )
+
+        if response.status_code != http.HTTPStatus.OK:
+            return False
+
     def get_inbox_initial_state(self) -> list:
         params = {
             'nsfw_filtering_enabled': 'false',

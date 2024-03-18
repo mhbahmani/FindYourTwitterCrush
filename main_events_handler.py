@@ -156,7 +156,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
                 # loop.run_until_complete(send_output(user_id, cached_path))
                 redis_client.add_event_to_queue([username, user_id, cached_path], queue="liked_users_done")
             else:
-                # twitter_client.reply_output_in_reply(cached_path, tweet_id)
+                # twitter_client.send_output_in_reply(cached_path, tweet_id)
                 logging.info(f"Tweeted result for {username} in {cached_path}")
             return
 
@@ -198,7 +198,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
         # loop.run_until_complete(send_output(user_id, image_path))
         redis_client.add_event_to_queue([username, user_id, image_path], queue="liked_users_done")
     else:
-        # twitter_client.reply_output_in_reply(image_path, tweet_id)
+        # twitter_client.send_output_in_reply(image_path, tweet_id)
         logging.info(f"result for {username} in {image_path} tweeted")
 
 # ACTION = "liking_users"
