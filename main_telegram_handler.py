@@ -82,7 +82,7 @@ async def username_handler(event):
     if user_id in waiting_users_liked:
         await client.send_message(user_id, already_got_your_request_msg)
         return
-    print("= Adding", twitter_username, "to queue liked_users, user_d", user_id)
+    print("= Adding", twitter_username, "to queue liked_users, user_id", user_id)
     redis_client.add_event_to_queue([twitter_username, str(user_id), "b"], queue="liked_users")
 
     await client.send_message(user_id, request_accepted_msg, link_preview=False)
