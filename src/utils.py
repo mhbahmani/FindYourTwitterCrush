@@ -10,4 +10,4 @@ def generate_private_output_address(output_path) -> str:
 
 def generate_result_tweet_text() -> str:
     # Choose random element of messages list
-    return random.choice(RESULT_TWEET_TEXTS) + "😉"
+    return random.choice(RESULT_TWEET_TEXTS)

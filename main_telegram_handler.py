@@ -8,14 +8,24 @@ from src.messages import (
     error_template,
     too_many_requests_msg,
     request_accepted_msg,
-    already_got_your_request_msg
+    already_got_your_request_msg,
+    ALREADY_STARTED_MSG,
+    START_MSG,
 )
 
 import re
 import logging
 import asyncio
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    filename="telegram_handler.log",
+    filemode="a",
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level={
+        'INFO': logging.INFO,
+        'DEBUG': logging.DEBUG,
+        'ERROR': logging.ERROR,
+    }[config("LOG_LEVEL", default="INFO")])
 
 loop = asyncio.get_event_loop()
 
@@ -34,19 +44,28 @@ redis_client = Redis()
 
 @client.on(events.NewMessage(pattern=r"/start"))
 async def start_handler(event):
-    user_id = event.original_update.message.peer_id.user_id
-    await client.send_message(user_id, error_template)
+    user = {
+        "user_id": event.original_update.message.peer_id.user_id,
+        "username": event.message._sender.username
+    } 
+    if db_client.add_new_bot_user(user):
+        await client.send_message(user.get("user_id"), START_MSG)
+    else:
+        await client.send_message(user.get("user_id"), ALREADY_STARTED_MSG)
+    return
+
 
 @client.on(events.NewMessage())
 async def username_handler(event):
     text = event.raw_text
+    if text == "/start":
+        return
     # print(text)
     user_id = event.original_update.message.peer_id.user_id
     # print(redis_client.get_user_request_count(str(user_id), "liked_users"))
     if redis_client.get_user_request_count(str(user_id), "liked_users") >= REQUEST_LIMIT:
         await client.send_message(user_id, too_many_requests_msg.format(REQUEST_LIMIT))
         return
-    redis_client.increase_user_request_count(str(user_id), "liked_users")
 
     # fetch the part of the text that matchs with https://.*
     profile_url = re.findall(r'https://.*', text)
@@ -54,18 +73,19 @@ async def username_handler(event):
         await client.send_message(user_id, error_template)
         return
     else: profile_url = profile_url[0]
-    username = profile_url.strip().split("/")[-1]
+    twitter_username = profile_url.strip().split("/")[-1]
 
     # in_progress_usernames = redis_client.get_all_progressing_events("liked_users")
     if user_id in handled_users_liked:
         await client.send_message(user_id, already_got_your_request_msg)
         return
-    print("= Adding", username, "to queue liked_users, user_d", user_id)
-    redis_client.add_event_to_queue([username, str(user_id), "b"], queue="liked_users")
-    handled_users_liked.add(user_id)
+    print("= Adding", twitter_username, "to queue liked_users, user_d", user_id)
+    redis_client.add_event_to_queue([twitter_username, str(user_id), "b"], queue="liked_users")
 
     await client.send_message(user_id, request_accepted_msg, link_preview=False)
-    # await client.disconnect()
+    
+    handled_users_liked.add(user_id)
+    redis_client.increase_user_request_count(str(user_id), "liked_users")
 
 
 async def send_output(user_id, image_path):

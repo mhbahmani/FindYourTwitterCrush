@@ -2,6 +2,8 @@
 from decouple import config
 from pymongo import MongoClient
 
+from pymongo.errors import DuplicateKeyError
+
 
 class DB:
     def __init__(self) -> None:
@@ -34,4 +36,10 @@ class DB:
         
     def get_all_handled_liked(self) -> list:
         return [user.get("username") for user in list(self.db.liked.find({}, {"username": 1, "_id": 0}))]
-        
+    
+    def add_new_bot_user(self, user: dict):
+        try:
+            self.db.telegram_users.insert_one(user)
+            return True
+        except DuplicateKeyError: 
+            return False
