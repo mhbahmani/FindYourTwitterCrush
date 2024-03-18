@@ -13,4 +13,7 @@ python src/listener.py
 
 # Set the ACTION variable
 python src/events_handler.py
+
+# Make this index on database
+echo 'db.telegram_users.createIndex({"user_id": 1}, {unique: true})' | mongo twitter
 ```
