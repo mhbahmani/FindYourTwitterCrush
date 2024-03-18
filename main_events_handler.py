@@ -32,24 +32,32 @@ NUMBER_OF_RESULTS = 12
 
 
 def most_liking_users(username: str, tweet_id, type: str = "t"):
-#     if type == "c":
-#         try:
-#             liking_users, likes_avg = twitter_client.get_user_most_liking_users(username)
-#         except Exception as e:
-#             logging.error(e)
-#             logging.error(username, tweet_id)
-#             return
-#         items = []
-#         liking_users = list(reversed(list(liking_users.items())[-12:]))
-#         for _username, data in liking_users:
-#             items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
-#         image_path = merge_images(items, likes_avg, username)
-#         logging.info(f"result for {username} stored at {image_path}")
-#         db_client.add_handled_liking({
-#             "username": username,
-#             "result": items
-#         })
-#         return
+    if type == "c":
+        try:
+            logging.info(f"Trying to cache output for {username}")
+            liking_users, likes_avg = twitter_client.get_user_most_liking_users(username)
+        except Exception as e:
+            logging.error(e)
+            logging.error(username, tweet_id)
+            return
+
+        users = []
+        for _scree_name in liking_users:
+            user = liking_users.get(_scree_name)
+            users.append([
+                user.get("count", 0),
+                _scree_name,
+                user.get("profile_image_url"),
+                user.get("name")
+            ])
+        image_path = merge_images(data=users, username=username, likes_avg=likes_avg)
+        
+        db_client.add_handled_liking({
+            "username": username,
+            "result": users
+        })
+
+        return
 
     if CHECK_IMAGE_CACHE:
         cached_path = check_output_image_is_present(username, "liking")
@@ -104,23 +112,32 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
         logging.info(f"result for {username} in {image_path} tweeted")
 
 def most_liked_users(username: str, tweet_id, type: str = "t"):
-    # if type == "c":
-    #     try:
-    #         liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
-    #     except Exception as e:
-    #         logging.error(e)
-    #         logging.error(username, tweet_id)
-    #         return
+    if type == "c":
+        try:
+            logging.info(f"Trying to cache output for {username}")
+            liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
+        except Exception as e:
+            logging.error(e)
+            logging.error(username, tweet_id)
+            return
 
-    #     items = []
-    #     liked_users = list(reversed(list(liked_users.items())[-12:]))
-    #     for _username, data in liked_users:
-    #         items.append([data.get("count", 0), _username, data.get("profile_image_url"), data.get("name")])
-    #     db_client.add_handled_liked({
-    #         "username": username,
-    #         "result": items
-    #     })
-    #     return
+        users = []
+        for screen_name in liked_users:
+            users.append(
+                [
+                    liked_users.get(screen_name, {}).get("count", 0),
+                    screen_name,
+                    liked_users.get(screen_name, {}).get("profile_image_url"),
+                    liked_users.get(screen_name, {}).get("name")
+                ]
+            )
+        image_path = merge_images(data=users, username=username, total_likes=total_likes)
+
+        db_client.add_handled_liked({
+            "username": username,
+            "result": users
+        })
+        return
 
     if CHECK_IMAGE_CACHE:
         cached_path = check_output_image_is_present(username, "liked")
