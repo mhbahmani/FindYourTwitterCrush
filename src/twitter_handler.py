@@ -189,8 +189,7 @@ class Twitter():
             fetched_likes_count += len(iteration_likes)
             if not iteration_likes:
                 logging.info(f"No entry found, iteration_likes is empty")
-                self.dump_json(f"{username}.json", response.json())
-                # return liked_users, total_likes_count
+                return liked_users, total_likes_count
 
             for like in iteration_likes[:-2]:
                 total_likes_count += 1
