@@ -120,6 +120,7 @@ async def username_handler(event):
     if LIMITED_ACCESS_FOR_MY_FOLLOWINGS \
         and not user_id in NO_LIMIT_USER_IDS \
         and not twitter_username in followings:
+        logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}")
         await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
         return
 
