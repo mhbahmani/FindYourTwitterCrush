@@ -12,6 +12,7 @@ from src.messages import (
     already_got_your_request_msg,
     NO_USERNAME_OF_LINK_PROVIDED_MSG,
     PROFILE_NOT_FOUND_MSG,
+    SUPPORT_MSG,
     USERNAME_NOT_FOUND_MSG,
     ALREADY_STARTED_MSG,
     START_MSG,
@@ -50,6 +51,8 @@ db_client = DB()
 redis_client = Redis()
 
 twitter_client = Twitter()
+
+SRC_TWEET_ID = 1769757048814686227
 
 
 @client.on(events.NewMessage(pattern=r"/start"))
@@ -126,14 +129,19 @@ async def username_handler(event):
 
 async def handle_outputs():
     while True:
-        event = redis_client.get_event_from_queue("liked_users_done")
-        if event:
-            _, user_id, image_path = event
-            user_id = int(user_id)
-            logging.info(f"Send {image_path} for {user_id} in telegram")
-            await client.send_message(user_id, generate_result_tweet_text(), file=image_path)
-            waiting_users_liked.remove(user_id)
-        await asyncio.sleep(10)
+        try:
+            event = redis_client.get_event_from_queue("liked_users_done")
+            if event:
+                _, user_id, image_path = event
+                user_id = int(user_id)
+                logging.info(f"Send {image_path} for {user_id} in telegram")
+                await client.send_message(user_id, generate_result_tweet_text(), file=image_path)
+                await client.send_message(user_id, SUPPORT_MSG, file=image_path)
+                waiting_users_liked.remove(user_id)
+        except Exception as e:
+            logging.error(f"Something went wrong on handling outputs: {e}")
+        finally:
+            await asyncio.sleep(10)
 
 
 def load_waiting_users():
