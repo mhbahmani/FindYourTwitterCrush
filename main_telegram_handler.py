@@ -4,11 +4,15 @@ from decouple import config
 from src.redis_handler import Redis
 from src.db import DB
 from src.utils import generate_result_tweet_text
+from src.twitter_handler import Twitter
 from src.messages import (
     error_template,
     too_many_requests_msg,
     request_accepted_msg,
     already_got_your_request_msg,
+    NO_USERNAME_OF_LINK_PROVIDED_MSG,
+    PROFILE_NOT_FOUND_MSG,
+    USERNAME_NOT_FOUND_MSG,
     ALREADY_STARTED_MSG,
     START_MSG,
 )
@@ -44,6 +48,8 @@ waiting_users_liked = set() # List of usernames
 
 db_client = DB()
 redis_client = Redis()
+
+twitter_client = Twitter()
 
 
 @client.on(events.NewMessage(pattern=r"/start"))
@@ -86,10 +92,20 @@ async def username_handler(event):
     # fetch the part of the text that matchs with https://.*
     profile_url = re.findall(r'https://.*', text)
     if not profile_url:
-        await client.send_message(user_id, error_template)
-        return
-    else: profile_url = profile_url[0]
-    twitter_username = profile_url.strip().split("/")[-1]
+        twitter_username = re.findall(r'[a-zA-Z0-9_]+', text)
+        if not twitter_client:
+            await client.send_message(user_id, NO_USERNAME_OF_LINK_PROVIDED_MSG)
+            return
+        twitter_username = twitter_username[0]
+        if not twitter_client.check_username_exists(twitter_username):
+            await client.send_message(user_id, USERNAME_NOT_FOUND_MSG.format(twitter_username))
+            return
+    else:
+        profile_url = profile_url[0]
+        twitter_username = profile_url.strip().split("/")[-1]
+        if not twitter_client.check_username_exists(twitter_username):
+            await client.send_message(user_id, PROFILE_NOT_FOUND_MSG.format(twitter_username))
+            return
 
     # in_progress_usernames = redis_client.get_all_progressing_events("liked_users")
     if user_id in waiting_users_liked:
