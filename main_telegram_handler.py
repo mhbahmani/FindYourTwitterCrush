@@ -125,6 +125,7 @@ async def username_handler(event):
         return
     
     if twitter_client.check_user_is_private_by_screen_name(twitter_username):
+        logging.info(f"Access denied to private twitter account: {twitter_username}, requested by: {username}")
         await client.send_message(user_id, PRIVATE_ACCOUNT_ERROR_MSG.format(twitter_username))
         return
 
