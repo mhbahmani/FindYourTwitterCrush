@@ -133,6 +133,7 @@ def cleanup_image(key: str, TOTAL_IMAGES: int):
 
 
 def retrieve_image_path(username: str, type: str, private: bool = False):
+    username = username.lower()
     if type == "liking":
         if not private:
             return f"{OUTPUT_DIR}/{username}-liking.jpg"
@@ -146,4 +147,8 @@ def retrieve_image_path(username: str, type: str, private: bool = False):
 
 def check_output_image_is_present(username: str, type: str) -> str:
     path = retrieve_image_path(username, type)
-    return path if os.path.exists(path) else None
+    if os.path.exists(path):
+        return path
+    else:
+        path = retrieve_image_path(username.lower(), type)
+        return path if os.path.exists(path) else None
