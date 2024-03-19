@@ -119,7 +119,7 @@ async def username_handler(event):
 
     if LIMITED_ACCESS_FOR_MY_FOLLOWINGS \
         and not user_id in NO_LIMIT_USER_IDS \
-        and not twitter_username in followings:
+        and not twitter_username.lower() in followings:
         logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}")
         await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
         return
@@ -168,7 +168,7 @@ async def load_followings():
         return
     while True:
         global followings
-        followings = [user.get("screen_name") for user in twitter_client.get_user_followings("mh_bahmani")]
+        followings = [user.get("screen_name") for user in twitter_client.get_user_followings_in_lower_case("mh_bahmani")]
         logging.info(f"mh_bahmani followings loaded")
         await asyncio.sleep(60 * 60)
 

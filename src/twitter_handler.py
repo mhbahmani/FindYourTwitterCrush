@@ -756,7 +756,7 @@ class Twitter():
             time.sleep(5 * 60)
         return sender_ids
 
-    def get_user_followings(self, username: str = None, user_id: str = None) -> list:
+    def get_user_followings_in_lower_case(self, username: str = None, user_id: str = None) -> list:
         if username and not user_id:
             user_id = self.get_user_id_by_username(username)
         if not user_id:
@@ -787,7 +787,7 @@ class Twitter():
                 legacy = entry.get("content", {}).get("itemContent", {}).get("user_results", {}).get("result", {}).get("legacy")
                 if not legacy: continue
                 followings.append({
-                    "screen_name": legacy.get("screen_name"),
+                    "screen_name": legacy.get("screen_name", "").lower(),
                     "name": legacy.get("name"),
                     "followed_by": bool(legacy.get("followed_by")), # Did he followed me?
                 })
