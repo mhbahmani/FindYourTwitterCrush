@@ -129,6 +129,7 @@ async def handle_outputs():
         if event:
             _, user_id, image_path = event
             user_id = int(user_id)
+            logging.info(f"Send {image_path} for {user_id} in telegram")
             await client.send_message(user_id, generate_result_tweet_text(), file=image_path)
             waiting_users_liked.remove(user_id)
         await asyncio.sleep(10)
