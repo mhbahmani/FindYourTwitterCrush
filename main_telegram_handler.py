@@ -90,6 +90,7 @@ async def username_handler(event):
         return
 
     # fetch the part of the text that matchs with https://.*
+    text = text.split("?")[0]
     profile_url = re.findall(r'https://.*', text)
     if not profile_url:
         twitter_username = re.findall(r'[a-zA-Z0-9_]+', text)
@@ -102,7 +103,7 @@ async def username_handler(event):
             return
     else:
         profile_url = profile_url[0]
-        twitter_username = profile_url.strip().split("/")[-1]
+        twitter_username = profile_url.strip().split("/")[-1].strip("/")
         if not twitter_client.check_username_exists(twitter_username):
             await client.send_message(user_id, PROFILE_NOT_FOUND_MSG.format(twitter_username))
             return
