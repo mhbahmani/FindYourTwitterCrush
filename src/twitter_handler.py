@@ -34,6 +34,8 @@ TWEET_LIKE_TRESHOLD = 200
 class REQUEST_TYPE(Enum):
     DIRECT = "d"
     TWEET = "t"
+    CACHE = "c"
+    BOT = "b"
 
 class Twitter():
     CONFIG_FILE_PATH = "config/twitter.json"
@@ -82,7 +84,7 @@ class Twitter():
                             repliers_with_tweet_id[screen_name] = [
                                 screen_name,
                                 _item.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
-                                REQUEST_TYPE.TWEET.value
+                                REQUEST_TYPE.CACHE.value
                             ]
                 else:
                     screen_name = entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
@@ -90,7 +92,7 @@ class Twitter():
                         repliers_with_tweet_id[screen_name] = [
                             screen_name,
                             entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
-                            REQUEST_TYPE.TWEET.value
+                            REQUEST_TYPE.CACHE.value
                         ]
                     
             if entries[-1] and entries[-1].get("content", {}).get("itemContent", {}).get("cursorType") == "Bottom":
