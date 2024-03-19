@@ -721,6 +721,49 @@ class Twitter():
             time.sleep(5 * 60)
         return sender_ids
 
+    def get_user_followings(self, username: str = None, user_id: str = None) -> list:
+        if username and not user_id:
+            user_id = self.get_user_id_by_username(username)
+        if not user_id:
+            raise Exception("user_id is required")
+        
+        followings = []
+
+        cursor = None
+        while True:
+            params = {
+                'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":100,\"includePromotedContent\":false}}",
+                'features': '{"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":false,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}',
+            }
+
+            response = requests.get(
+                'https://twitter.com/i/api/graphql/PiHWpObvX9tbClrUl6rL9g/Following',
+                params=params,
+                cookies=self.cookies,
+                headers=self.headers,
+            )
+
+            if response.status_code != http.HTTPStatus.OK:
+                raise Exception("Something went wrong")
+
+            entries = response.json().get("data", {}).get("user", {}).get("result", {}).get("timeline", {}).get("timeline", {}).get("instructions", [{"entries": []}])[-1].get("entries", [])
+            if not entries: break
+            for entry in entries:
+                legacy = entry.get("content", {}).get("itemContent", {}).get("user_results", {}).get("result", {}).get("legacy")
+                if not legacy: continue
+                followings.append({
+                    "screen_name": legacy.get("screen_name"),
+                    "name": legacy.get("name"),
+                    "followed_by": bool(legacy.get("followed_by")), # Did he followed me?
+                })
+
+            logging.info(f"Loaded followings: {len(followings)}")
+            cursor = entries[-2].get("content").get("value")
+            if not cursor or cursor.split("|")[0] == "0": break
+            sleep(5)
+
+        return followings
+
     def load_twitter_config(self, path: str):
         if not os.path.exists(path):
             raise Exception(f"Config file not found at {path}")

@@ -12,6 +12,7 @@ from src.messages import (
     already_got_your_request_msg,
     NO_USERNAME_OF_LINK_PROVIDED_MSG,
     PROFILE_NOT_FOUND_MSG,
+    ACCESS_DENIED_MSG,
     SUPPORT_MSG,
     USERNAME_NOT_FOUND_MSG,
     ALREADY_STARTED_MSG,
@@ -43,6 +44,7 @@ api_hash = config("CLIENT_API_HASH")
 client = TelegramClient('anon_crush', api_id, api_hash)
 
 SEND_SUPPORT_MSG = config("SEND_SUPPORT_MSG", default=True, cast=bool)
+LIMITED_ACCESS_FOR_MY_FOLLOWINGS = config("LIMITED_ACCESS_FOR_MY_FOLLOWINGS", default=False, cast=bool)
 
 NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_IDS").split(",")]
 
@@ -53,6 +55,7 @@ db_client = DB()
 redis_client = Redis()
 
 twitter_client = Twitter()
+followings = []
 
 SRC_TWEET_ID = 1769757048814686227
 
@@ -77,15 +80,16 @@ async def username_handler(event):
         return
     # print(text)
     user_id = event.original_update.message.peer_id.user_id
+    username = event.message._sender.username
     
     try:
         loop.create_task(db_client.add_new_message(
             text, user_id,
-            event.message._sender.username,
+            username,
             datetime.datetime.today().replace(microsecond=0).strftime('%Y-%m-%d %H:%M:%S'))
         )
     except Exception as e:
-        logging.error(f"Storing message failed, message: {text} user_id: {user_id} username: {event.message._sender.username}")
+        logging.error(f"Storing message failed, message: {text} user_id: {user_id} username: {username}")
         logging.error(e)
         pass
 
@@ -112,6 +116,12 @@ async def username_handler(event):
         if not twitter_client.check_username_exists(twitter_username):
             await client.send_message(user_id, PROFILE_NOT_FOUND_MSG.format(twitter_username))
             return
+
+    if LIMITED_ACCESS_FOR_MY_FOLLOWINGS \
+        and not user_id in NO_LIMIT_USER_IDS \
+        and not twitter_username in followings:
+        await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
+        return
 
     # in_progress_usernames = redis_client.get_all_progressing_events("liked_users")
     if user_id in waiting_users_liked:
@@ -147,6 +157,17 @@ async def handle_outputs():
             await asyncio.sleep(10)
 
 
+async def load_followings():
+    if not LIMITED_ACCESS_FOR_MY_FOLLOWINGS:
+        logging.info("Loading followings skipped")
+        return
+    while True:
+        global followings
+        followings = [user.get("screen_name") for user in twitter_client.get_user_followings("mh_bahmani")]
+        logging.info(f"mh_bahmani followings loaded")
+        await asyncio.sleep(60 * 60)
+
+
 def load_waiting_users():
     # for username in db_client.get_all_handled_liking():
     #     handled_users_liking.add(username)
@@ -162,6 +183,7 @@ if __name__ == "__main__":
     load_waiting_users()
     client.start()
     loop.create_task(handle_outputs())
+    loop.create_task(load_followings())
     print("start")
     client.run_until_disconnected()
     print("disconnected")
