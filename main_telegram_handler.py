@@ -16,6 +16,8 @@ from src.messages import (
 import re
 import logging
 import asyncio
+import datetime
+
 
 logging.basicConfig(
     filename="telegram_handler.log",
@@ -64,6 +66,17 @@ async def username_handler(event):
         return
     # print(text)
     user_id = event.original_update.message.peer_id.user_id
+    
+    try:
+        loop.create_task(db_client.add_new_message(
+            text, user_id,
+            event.message._sender.username,
+            datetime.datetime.today().replace(microsecond=0).strftime('%Y-%m-%d %H:%M:%S'))
+        )
+    except Exception as e:
+        logging.error(f"Storing message failed, message: {text} user_id: {user_id} username: {event.message._sender.username}")
+        logging.error(e)
+        pass
 
     if not user_id in NO_LIMIT_USER_IDS \
         and redis_client.get_user_request_count(str(user_id), "liked_users") >= REQUEST_LIMIT:
@@ -82,8 +95,11 @@ async def username_handler(event):
     if user_id in waiting_users_liked:
         await client.send_message(user_id, already_got_your_request_msg)
         return
+
     print("= Adding", twitter_username, "to queue liked_users, user_id", user_id)
     redis_client.add_event_to_queue([twitter_username, str(user_id), "b"], queue="liked_users")
+    print("* Adding", twitter_username, "to queue liking_users, tweet_id", user_id)
+    redis_client.add_event_to_queue([twitter_username, str(user_id), "b"], queue="liking_users")
 
     await client.send_message(user_id, request_accepted_msg, link_preview=False)
     
