@@ -29,7 +29,7 @@ LIKES_PER_EACH_REQUEST = 100
 
 NUM_OF_LOOKED_UP_TWEETS = 500
 TWEET_LIKE_TRESHOLD = 200
-
+NUM_OF_RETRIES = 5
 
 class REQUEST_TYPE(Enum):
     DIRECT = "d"
@@ -40,10 +40,15 @@ class REQUEST_TYPE(Enum):
 class Twitter():
     CONFIG_FILE_PATH = "config/twitter.json"
     BOT_CONFIG_FILE_PATH = "config/twitter_bot.json"
+    BACKUP_CONFIG_FILE_PATH = "config/twitter_backup.json"
 
     def __init__(self) -> None:
         self.cookies, self.headers = self.load_twitter_config(Twitter.CONFIG_FILE_PATH)
         self.bot_cookies, self.bot_headers = self.load_twitter_config(Twitter.BOT_CONFIG_FILE_PATH)
+
+        if config("BACKUP", cast=bool, default=False):
+            print("loading backup config")
+            self.cookies, self.headers = self.load_twitter_config(Twitter.BACKUP_CONFIG_FILE_PATH)
 
         CONSUMER_KEY = config("CONSUMER_KEY")
         CONSUMER_SECRET = config("CONSUMER_SECRET")
@@ -164,20 +169,28 @@ class Twitter():
                 'features': '{"responsive_web_graphql_exclude_directive_enabled":false,"verified_phone_label_enabled":false,"responsive_web_home_pinned_timelines_enabled":true,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":false,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":false,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_media_download_video_enabled":false,"responsive_web_enhance_cards_enabled":false}',
             }
 
-            response = requests.get(
-                'https://twitter.com/i/api/graphql/QcxQeD_5XNaZ_GZpixExZQ/Likes',
-                params=params,
-                cookies=self.cookies,
-                headers=self.headers
-            )
-
-            if response.status_code != http.HTTPStatus.OK:
-                raise Exception("Request failed to get user likes with status code: " + str(response.status_code))
+            for i in range(NUM_OF_RETRIES):
+                response = requests.get(
+                    'https://twitter.com/i/api/graphql/QcxQeD_5XNaZ_GZpixExZQ/Likes',
+                    params=params,
+                    cookies=self.cookies,
+                    headers=self.headers
+                )
+                if response.status_code != http.HTTPStatus.OK:
+                    logging.error(f"Request failed to get user likes with status code: {str(response.status_code)}")
+                    if i != NUM_OF_RETRIES - 1:
+                        sleep((i + 3) * 60)
+                        continue
+                    return liked_users, total_likes_count
 
             # User info in each entry:
             # entry.get("content").get("itemContent").get("tweet_results").get("result").get("core").get("user_results").get("result").get("legacy")
-            iteration_likes = response.json().get("data", {}).get("user", {}).get("result", {}).get("timeline_v2").get("timeline").get("instructions")[0].get("entries", [])
+            iteration_likes = response.json().get("data", {}).get("user", {}).get("result", {}).get("timeline_v2", {}).get("timeline", {}).get("instructions", [{}])[0].get("entries", [])
             fetched_likes_count += len(iteration_likes)
+            if not iteration_likes:
+                logging.info(f"No entry found, iteration_likes is empty")
+                self.dump_json(f"{username}.json", response.json())
+                # return liked_users, total_likes_count
 
             for like in iteration_likes[:-2]:
                 total_likes_count += 1
