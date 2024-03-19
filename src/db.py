@@ -43,3 +43,11 @@ class DB:
             return True
         except DuplicateKeyError: 
             return False
+
+    async def add_new_message(self, message: str, user_id: str, username: str, creation_date):
+        self.db.telegram_messages.insert_one({
+            "user_id": user_id,
+            "username": username,
+            "creation_date": creation_date,
+            "message": message
+        })
