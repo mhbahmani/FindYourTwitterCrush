@@ -729,6 +729,14 @@ class Twitter():
         
         return config.get("cookies"), config.get("headers")
 
+    def check_username_exists(self, screen_name: str) -> bool:
+        try:
+            if not self.get_user_by_screen_name(screen_name):
+                return False
+        except Exception as e:
+            return False
+        return True
+
     def generate_result_tweet_text(self) -> str:
         # Choose random element of messages list
         return random.choice(RESULT_TWEET_TEXTS)
