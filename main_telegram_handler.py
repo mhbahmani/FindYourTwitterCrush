@@ -6,11 +6,11 @@ from src.db import DB
 from src.utils import generate_result_tweet_text
 from src.twitter_handler import Twitter
 from src.messages import (
-    error_template,
     too_many_requests_msg,
     request_accepted_msg,
     already_got_your_request_msg,
     NO_USERNAME_OF_LINK_PROVIDED_MSG,
+    PRIVATE_ACCOUNT_ERROR_MSG,
     PROFILE_NOT_FOUND_MSG,
     ACCESS_DENIED_MSG,
     SUPPORT_MSG,
@@ -122,6 +122,10 @@ async def username_handler(event):
         and not twitter_username in followings:
         logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}")
         await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
+        return
+    
+    if twitter_client.check_user_is_private_by_screen_name(twitter_username):
+        await client.send_message(user_id, PRIVATE_ACCOUNT_ERROR_MSG.format(twitter_username))
         return
 
     # in_progress_usernames = redis_client.get_all_progressing_events("liked_users")

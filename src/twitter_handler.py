@@ -111,6 +111,29 @@ class Twitter():
         with open(filename, "w") as f:
             json.dump(content, f, indent=4)
 
+    def check_user_is_private_by_screen_name(self, username: str) -> bool:
+        user = self.get_full_user_info_by_screen_name(username)
+        return bool(user.get("data", {}).get("user", {}).get("result", {}).get("legacy", {}).get("protected", False))
+
+    def get_full_user_info_by_screen_name(self, username: str) -> dict:
+        params = {
+            'variables': f'{{"screen_name":"{username}","withSafetyModeUserFields":true}}',
+            'features': '{"hidden_profile_likes_enabled":false,"hidden_profile_subscriptions_enabled":false,"responsive_web_graphql_exclude_directive_enabled":false,"verified_phone_label_enabled":false,"subscriptions_verification_info_is_identity_verified_enabled":false,"subscriptions_verification_info_verified_since_enabled":false,"highlights_tweets_tab_ui_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":false,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"responsive_web_graphql_timeline_navigation_enabled":false}',
+            'fieldToggles': '{"withAuxiliaryUserLabels":false}',
+        }
+
+        response = requests.get(
+            'https://twitter.com/i/api/graphql/G3KGOASz96M-Qu0nwmGXNg/UserByScreenName',
+            params=params,
+            cookies=self.cookies,
+            headers=self.headers
+        )
+
+        if response.status_code != http.HTTPStatus.OK:
+            raise Exception("Request failed to get user id with status code: " + str(response.status_code))
+        
+        return response.json()
+
     def get_user_id_by_username(self, username: str) -> str:
         params = {
             'variables': f'{{"screen_name":"{username}","withSafetyModeUserFields":true}}',
