@@ -42,6 +42,8 @@ api_id = config("CLIENT_API_ID")
 api_hash = config("CLIENT_API_HASH")
 client = TelegramClient('anon_crush', api_id, api_hash)
 
+SEND_SUPPORT_MSG = config("SEND_SUPPORT_MSG", default=True, cast=bool)
+
 NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_IDS").split(",")]
 
 waiting_users_liking = set() # List of usersnames
@@ -136,8 +138,9 @@ async def handle_outputs():
                 user_id = int(user_id)
                 logging.info(f"Send {image_path} for {user_id} in telegram")
                 await client.send_message(user_id, generate_result_tweet_text(), file=image_path)
-                await client.send_message(user_id, SUPPORT_MSG, file=image_path)
-                waiting_users_liked.remove(user_id)
+                if SEND_SUPPORT_MSG:
+                    await client.send_message(user_id, SUPPORT_MSG)
+                waiting_users_liked.remove(str(user_id))
         except Exception as e:
             logging.error(f"Something went wrong on handling outputs: {e}")
         finally:
