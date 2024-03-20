@@ -27,7 +27,8 @@ twitter_client = Twitter()
 redis_client = Redis()
 
 
-CHECK_IMAGE_CACHE = config("CHECK_IMAGE_CACHE", True, cast=bool)
+RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS = config("RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS", default=False, cast=bool)
+CHECK_IMAGE_CACHE = config("CHECK_IMAGE_CACHE", default=True, cast=bool)
 NUMBER_OF_RESULTS = 12
 
 
@@ -35,7 +36,15 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
     if type == "c":
         try:
             logging.info(f"Trying to cache output for {username}")
+            # If renewing is not necessary and there is already an output for this user,
+            # skip the request
+            if not RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS \
+                and check_output_image_is_present(username, "liking"):
+                    logging.info(f"There is already an output of type liking for {username}")
+                    return
+            # If renewing is mandatory or there is no output for this user, make an output
             liking_users, likes_avg = twitter_client.get_user_most_liking_users(username)
+                
         except Exception as e:
             logging.error(e)
             logging.error(username, tweet_id)
@@ -119,6 +128,13 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
     if type == "c":
         try:
             logging.info(f"Trying to cache output for {username}")
+            # If renewing is not necessary and there is already an output for this user,
+            # skip the request
+            if not RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS \
+                and check_output_image_is_present(username, "liking"):
+                    logging.info(f"There is already an output of type liking for {username}")
+                    return
+            # If renewing is mandatory or there is no output for this user, make an output
             liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
         except Exception as e:
             logging.error(e)
