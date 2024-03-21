@@ -181,10 +181,11 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
 
     logging.info(f"Finding most liked users for {username}")
     try:
-        users, total_likes = db_client.get_handled_liked(username)
+        if not RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS:
+            users, total_likes = db_client.get_handled_liked(username)
         # If there was no record for this user on database
         # TODO: Move this to redis
-        if not users:
+        if RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS or not users:
             liked_users, total_likes = twitter_client.get_user_most_liked_users(username, NUMBER_OF_RESULTS)
 
             users = []
