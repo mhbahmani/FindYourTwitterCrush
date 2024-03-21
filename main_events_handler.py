@@ -181,27 +181,33 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
 
     logging.info(f"Finding most liked users for {username}")
     try:
-        liked_users, total_likes = twitter_client.get_user_most_liked_users(username, NUMBER_OF_RESULTS)
+        users, total_likes = db_client.get_handled_liked(username)
+        # If there was no record for this user on database
+        # TODO: Move this to redis
+        if not users:
+            liked_users, total_likes = twitter_client.get_user_most_liked_users(username, NUMBER_OF_RESULTS)
+
+            users = []
+            for screen_name in liked_users:
+                users.append(
+                    [
+                        liked_users.get(screen_name, {}).get("count", 0),
+                        screen_name,
+                        liked_users.get(screen_name, {}).get("profile_image_url"),
+                        liked_users.get(screen_name, {}).get("name")
+                    ]
+                )
+
+            db_client.add_handled_liked({
+                "username": username,
+                "result": users,
+                "total_likes": total_likes
+            })
+
     except Exception as e:
         logging.error(e)
         logging.error(username, tweet_id)
         return
-
-    users = []
-    for screen_name in liked_users:
-        users.append(
-            [
-                liked_users.get(screen_name, {}).get("count", 0),
-                screen_name,
-                liked_users.get(screen_name, {}).get("profile_image_url"),
-                liked_users.get(screen_name, {}).get("name")
-            ]
-        )
-
-    db_client.add_handled_liked({
-        "username": username,
-        "result": users
-    })
 
     private = True if type == "d" else False
     image_path = merge_images(data=users, username=username, total_likes=total_likes, private=private)
