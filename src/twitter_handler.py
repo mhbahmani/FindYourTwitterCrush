@@ -230,6 +230,9 @@ class Twitter():
             print(fetched_likes_count)
             if fetched_likes_count >= FETCH_LIKES_COUNT: break
             
+            if len(iteration_likes) < 3:
+                # This user probably has no any other like in his account
+                break
             last_tweet_id = iteration_likes[-3].get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id")
             try:
                 last_tweet_date = self.get_tweet_creattion_date_by_id(last_tweet_id)
