@@ -96,6 +96,7 @@ async def username_handler(event):
 
     if not user_id in NO_LIMIT_USER_IDS \
         and redis_client.get_user_request_count(str(user_id), "liked_users") >= REQUEST_LIMIT:
+        logging.info(f"Block request because of passing the request limit, username: {username}, text: {text}")
         await client.send_message(user_id, too_many_requests_msg.format(REQUEST_LIMIT))
         return
 
