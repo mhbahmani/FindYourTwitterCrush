@@ -350,7 +350,6 @@ class Twitter():
                     if tweet_data.get("tweet") or \
                         not tweet_data.get("legacy").get("favorite_count") \
                         or tweet_data.get("legacy").get("favorite_count") > TWEET_LIKE_TRESHOLD:
-                        print("skipped retweet or no fave", tweet_data.get("rest_id"))
                         # Tweet has no faves or it's a retweet or has more than TWEET_LIKE_TRESHOLD likes
                         continue
                     if tweet_time_days_treshold and \
