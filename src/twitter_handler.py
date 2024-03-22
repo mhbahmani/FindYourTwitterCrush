@@ -309,16 +309,17 @@ class Twitter():
             tweet_info = liked_tweet.get("content").get("itemContent").get("tweet_results", {}).get("result", {}).get("core", {})
         return tweet_info.get("user_results", {}).get("result", {}).get("legacy", {})
 
-    def get_user_tweets(self, user_id: str, tweet_time_days_treshold: int = None) -> list:
+    def get_user_tweets(self, user_id: str, tweet_time_days_treshold: int = None, ignore_mentions: bool = True) -> set:
         """
-            Output: [tweet_id, ...]
+            Output: {tweet_id, ...}
         """
-        tweet_ids = []
+        tweet_ids = set()
         cursor = None
+        i = 0
         while True:
             params = {
                 'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":100,\"includePromotedContent\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withVoice\":true,\"withV2Timeline\":true}}",
-                'features': '{"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}',
+                'features': '{"responsive_web_graphql_exclude_directive_enabled":true,"verified_phone_label_enabled":false,"creator_subscriptions_tweet_preview_api_enabled":true,"responsive_web_graphql_timeline_navigation_enabled":true,"responsive_web_graphql_skip_user_profile_image_extensions_enabled":false,"c9s_tweet_anatomy_moderator_badge_enabled":true,"tweetypie_unmention_optimization_enabled":true,"responsive_web_edit_tweet_api_enabled":true,"graphql_is_translatable_rweb_tweet_is_translatable_enabled":true,"view_counts_everywhere_api_enabled":true,"longform_notetweets_consumption_enabled":true,"responsive_web_twitter_article_tweet_consumption_enabled":true,"tweet_awards_web_tipping_enabled":false,"freedom_of_speech_not_reach_fetch_enabled":true,"standardized_nudges_misinfo":true,"tweet_with_visibility_results_prefer_gql_limited_actions_policy_enabled":true,"rweb_video_timestamps_enabled":true,"longform_notetweets_rich_text_read_enabled":true,"longform_notetweets_inline_media_enabled":true,"responsive_web_enhance_cards_enabled":false}'
             }
 
             response = requests.get(
@@ -330,22 +331,33 @@ class Twitter():
 
             if response.status_code != http.HTTPStatus.OK:
                 raise Exception("Request failed to get user tweets with status code: " + str(response.status_code))
-            
+
             entries = response.json().get("data", {}).get("user", {}).get("result", {}).get("timeline_v2", {}).get("timeline", {}).get("instructions", [{"entries": []}])[-1].get("entries", [])
             for entry in entries:
-                if not "tweet" in entry.get("entryId"):
-                    continue
-                tweet_data = entry.get("content", {}).get("itemContent", {}).get("tweet_results").get("result", {})
-                if tweet_data.get("tweet") or \
-                    not tweet_data.get("legacy").get("favorite_count") \
-                    or tweet_data.get("legacy").get("favorite_count") > TWEET_LIKE_TRESHOLD:
-                    # Tweet has no faves or it's a retweet or has more than TWEET_LIKE_TRESHOLD likes
-                    continue
-                if tweet_time_days_treshold and \
-                    self.convert_tweet_created_at_to_datetiem(tweet_data.get("legacy").get("created_at")) \
-                    < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=tweet_time_days_treshold):
-                    return tweet_ids
-                tweet_ids.append(tweet_data.get("rest_id"))
+                # A thread of tweets are shown together. These are the profile-conversation type.
+                # In this entries, there is multiple tweets in "items".
+                # Below if statement, handles these type of entries.
+                if "profile-conversation" in entry.get("entryId"):
+                    tweets_data = [
+                        _tweet.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {})
+                        for _tweet in entry.get("content").get("items")
+                    ]
+                elif "tweet" in entry.get("entryId"):
+                    # These are normal tweets
+                    tweets_data = [entry.get("content", {}).get("itemContent", {}).get("tweet_results").get("result", {})]
+
+                for tweet_data in tweets_data:
+                    if tweet_data.get("tweet") or \
+                        not tweet_data.get("legacy").get("favorite_count") \
+                        or tweet_data.get("legacy").get("favorite_count") > TWEET_LIKE_TRESHOLD:
+                        print("skipped retweet or no fave", tweet_data.get("rest_id"))
+                        # Tweet has no faves or it's a retweet or has more than TWEET_LIKE_TRESHOLD likes
+                        continue
+                    if tweet_time_days_treshold and \
+                        self.convert_tweet_created_at_to_datetiem(tweet_data.get("legacy").get("created_at")) \
+                        < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=tweet_time_days_treshold):
+                        return tweet_ids
+                    tweet_ids.add(tweet_data.get("rest_id"))
 
             if not entries: break
 
@@ -353,6 +365,7 @@ class Twitter():
             if not cursor: break
 
             if len(tweet_ids) >= NUM_OF_LOOKED_UP_TWEETS: break
+            sleep(5)
 
         return tweet_ids
 
@@ -403,7 +416,11 @@ class Twitter():
 
     def get_user_most_liking_users(self, username: str, number_of_results: int = 12) -> list:
         user_id = self.get_user_id_by_username(username)
-        tweets = self.get_user_tweets(user_id, 365)
+        tweets = list(self.get_user_tweets(
+            user_id=user_id,
+            tweet_time_days_treshold=365,
+            ignore_mentions=True
+        ))
 
         liking_users_data = {}
         num_tweets = len(tweets)
