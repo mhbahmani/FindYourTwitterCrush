@@ -45,7 +45,7 @@ client = TelegramClient('anon_crush', api_id, api_hash)
 
 SEND_SUPPORT_MSG = config("SEND_SUPPORT_MSG", default=True, cast=bool)
 LIMITED_ACCESS_FOR_MY_FOLLOWINGS = config("LIMITED_ACCESS_FOR_MY_FOLLOWINGS", default=False, cast=bool)
-QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS = config("QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS", default=10, cast=int)
+QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS = config("QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS", default=1, cast=int)
 
 NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_IDS").split(",")]
 
