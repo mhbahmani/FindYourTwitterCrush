@@ -45,6 +45,7 @@ client = TelegramClient('anon_crush', api_id, api_hash)
 
 SEND_SUPPORT_MSG = config("SEND_SUPPORT_MSG", default=True, cast=bool)
 LIMITED_ACCESS_FOR_MY_FOLLOWINGS = config("LIMITED_ACCESS_FOR_MY_FOLLOWINGS", default=False, cast=bool)
+ALLOW_REQUESTS_WHEN_QUEUE_SIZE_IS_LOW = config("ALLOW_REQUESTS_WHEN_QUEUE_SIZE_IS_LOW", default=True, cast=bool)
 QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS = config("QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS", default=1, cast=int)
 
 NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_IDS").split(",")]
@@ -120,7 +121,7 @@ async def username_handler(event):
             return
 
     if LIMITED_ACCESS_FOR_MY_FOLLOWINGS \
-        and redis_client.get_queue_size("liked_users") > QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS \
+        and (not ALLOW_REQUESTS_WHEN_QUEUE_SIZE_IS_LOW or redis_client.get_queue_size("liked_users") > QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS) \
         and not user_id in NO_LIMIT_USER_IDS \
         and not twitter_username.lower() in followings:
         logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}, user_id: {user_id}")
