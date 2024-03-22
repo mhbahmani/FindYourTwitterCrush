@@ -26,6 +26,8 @@ class Redis:
             elif len(splited_event) == 3:
                 username, tweet_id, type = splited_event
                 return username, tweet_id, type
+    def get_queue_size(self, queue: str) -> int:
+        return int(self.client.llen(queue))
 
     def get_all_progressing_events(self, queue: str) -> list:
         return [user.decode("utf-8") for user in list(self.client.lrange(f"{queue}-progressing", 0, -1))]
