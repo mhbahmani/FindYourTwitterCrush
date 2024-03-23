@@ -51,8 +51,10 @@ QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS = config("QUEUE_SIZE_TRESHOLD_ON_LIMITED_A
 
 NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_IDS").split(",")]
 
-waiting_users_liking = set() # List of usersnames
-waiting_users_liked = set() # List of usernames
+waiting_users_liking = set() # List of user_ids
+waiting_users_liked = set() # List of user_ids
+# This is required for cases that people send multiple requests and get access denied
+blocked_users = set()
 
 db_client = DB()
 redis_client = Redis()
@@ -127,7 +129,10 @@ async def username_handler(event):
         and not twitter_username.lower() in followings:
         logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}, user_id: {user_id}")
         await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
-        redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], "liked_users_blocked")
+        if not user_id in blocked_users:
+            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], "liked_users_blocked")
+            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], "liked_users_all_blocked")
+            blocked_users.add(user_id)
         return
     
     if twitter_client.check_user_is_private_by_screen_name(twitter_username):
@@ -180,7 +185,13 @@ async def load_followings():
         await asyncio.sleep(60 * 60)
 
 
+def load_all_liked_request_blocked_users():
+    logging.info("Loading blocked user ids")
+    for user_id in redis_client.get_all_liked_blocked_user_ids():
+        blocked_users.add(int(user_id))
+
 def load_waiting_users():
+    logging.info("Loading warting users ids")
     # for username in db_client.get_all_handled_liking():
     #     handled_users_liking.add(username)
     # for username in db_client.get_all_handled_liked():
@@ -193,6 +204,7 @@ def load_waiting_users():
 
 if __name__ == "__main__":
     load_waiting_users()
+    load_all_liked_request_blocked_users()
     client.start()
     loop.create_task(handle_outputs())
     loop.create_task(load_followings())

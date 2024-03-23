@@ -40,7 +40,10 @@ class Redis:
 
     def get_all_user_ids_in_liked_queue(self):
         return [user.decode("utf-8").split("####")[1] for user in list(self.client.lrange("liked_users", 0, -1))]
-    
+
+    def get_all_liked_blocked_user_ids(self):
+        return [user.decode("utf-8").split("####")[1] for user in list(self.client.lrange("liked_users_all_blocked", 0, -1))]
+
     def get_user_request_count(self, user_id: str, request_type: str) -> int:
         count = self.client.get(self.generate_get_count_key(user_id, request_type))
         return int(count) if count else 0
