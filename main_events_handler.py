@@ -253,8 +253,8 @@ if __name__ == "__main__":
             if not event:
                 time.sleep(5)
                 continue
-        else:
-            empty_queue_counter = 0
+        
+        empty_queue_counter = 0
 
         username, tweet_id, type = event
         logging.info(f"Handling {ACTION} event for {username} {tweet_id} from {'directs' if type == 'd' else 'tweets'}")
