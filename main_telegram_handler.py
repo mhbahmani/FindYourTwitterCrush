@@ -107,7 +107,7 @@ async def username_handler(event):
     profile_url = re.findall(r'https://.*', text)
     if not profile_url:
         twitter_username = re.findall(r'[a-zA-Z0-9_]+', text)
-        if not twitter_client:
+        if not twitter_username:
             await client.send_message(user_id, NO_USERNAME_OF_LINK_PROVIDED_MSG)
             return
         twitter_username = twitter_username[0]
