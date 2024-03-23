@@ -31,8 +31,11 @@ RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS = config("RENEW_CACHED_IMAGES_ON_CACH
 CHECK_IMAGE_CACHE = config("CHECK_IMAGE_CACHE", default=True, cast=bool)
 NUMBER_OF_RESULTS = 12
 
+# If the queue be empty for EMPTY_QUEUE_COUNTER_TRESHOLD, the handler checks for the blocked queue
 HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG = \
     config("HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG", default=False, cast=bool)
+# This variable shows the amount of time the queue should be empty for the handler to check the blocked queue
+EMPTY_QUEUE_COUNTER_TRESHOLD = config("EMPTY_QUEUE_COUNTER_TRESHOLD", default=100, cast=int)
 
 
 def most_liking_users(username: str, tweet_id, type: str = "t"):
@@ -243,7 +246,7 @@ if __name__ == "__main__":
         if not event:
             if HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG:
                 empty_queue_counter += 1
-                if empty_queue_counter > 2:
+                if empty_queue_counter > EMPTY_QUEUE_COUNTER_TRESHOLD:
                     logging.info("Checking blocked queue")
                     event = redis_client.get_event_from_queue(ACTION + "_blocked")
             # If an event fetched or HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG is not set
