@@ -31,6 +31,9 @@ RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS = config("RENEW_CACHED_IMAGES_ON_CACH
 CHECK_IMAGE_CACHE = config("CHECK_IMAGE_CACHE", default=True, cast=bool)
 NUMBER_OF_RESULTS = 12
 
+HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG = \
+    config("HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG", default=False, cast=bool)
+
 
 def most_liking_users(username: str, tweet_id, type: str = "t"):
     if type == "c":
@@ -232,22 +235,31 @@ ACTION = "liked_users"
 
 
 if __name__ == "__main__":
-    # username, tweet_id = "mh_bahmani", None
-    # # most_liking_users(username, tweet_id)
-    # most_liked_users(username, tweet_id, "d")
-    # exit()
-
     logging.info(f"Starting to handle {ACTION} events")
+    empty_queue_counter = 0
     while True:
         event = redis_client.get_event_from_queue(ACTION)
-        if event:
-            username, tweet_id, type = event
-            logging.info(f"Handling {ACTION} event for {username} {tweet_id} from {'directs' if type == 'd' else 'tweets'}")
-            redis_client.add_username_to_progressing(username, f"{ACTION}-progressing")
-            if username:
-                if ACTION == "liking_users":
-                    most_liking_users(username, tweet_id, type)
-                elif ACTION == "liked_users":
-                    most_liked_users(username, tweet_id, type)
-        # else: logging.info(f"Noting found in queue {ACTION}")
-        time.sleep(1)
+
+        if not event:
+            if HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG:
+                empty_queue_counter += 1
+                if empty_queue_counter > 2:
+                    logging.info("Checking blocked queue")
+                    event = redis_client.get_event_from_queue(ACTION + "_blocked")
+            # If an event fetched or HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG is not set
+            if not event:
+                time.sleep(5)
+                continue
+        else:
+            empty_queue_counter = 0
+
+        username, tweet_id, type = event
+        logging.info(f"Handling {ACTION} event for {username} {tweet_id} from {'directs' if type == 'd' else 'tweets'}")
+        redis_client.add_username_to_progressing(username, f"{ACTION}-progressing")
+        if username:
+            if ACTION == "liking_users":
+                most_liking_users(username, tweet_id, type)
+            elif ACTION == "liked_users":
+                most_liked_users(username, tweet_id, type)
+
+        time.sleep(5)
