@@ -3,7 +3,7 @@
 
 config/twitter.json
 config/twitter_bot.json
-config/twitter_backup.json
+config/*.json
 test.py
 tmp/*
 tmp
