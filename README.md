@@ -1,4 +1,4 @@
-The code is a mess, don't focus on it :)  
+The code is a mess, don't judge me :)  
 I can do better :)
 
 ``` 
