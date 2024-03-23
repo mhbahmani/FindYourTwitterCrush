@@ -1,9 +1,9 @@
 from http.client import TOO_MANY_REQUESTS
 from collections import Counter
-from enum import Enum
 from time import sleep
 from pytz import UTC
 
+from src.static_data import REQUEST_TYPE
 from src.messages import (
     PRIVATE_OUTPUT_MESSAGE,
     RESULT_TWEET_TEXTS
@@ -31,11 +31,6 @@ NUM_OF_LOOKED_UP_TWEETS = 500
 TWEET_LIKE_TRESHOLD = 200
 NUM_OF_RETRIES = 5
 
-class REQUEST_TYPE(Enum):
-    DIRECT = "d"
-    TWEET = "t"
-    CACHE = "c"
-    BOT = "b"
 
 class Twitter():
     CONFIG_FILE_PATH = "config/twitter.json"
