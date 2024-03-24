@@ -9,6 +9,7 @@ from src.messages import (
     RESULT_TWEET_TEXTS
 )
 from src.exceptions import (
+    PrivateAccountException,
     RateLimitException
 )
 
@@ -549,11 +550,11 @@ class Twitter():
             },
         }
         """
+        if self.check_user_is_private_by_screen_name(username):
+            raise PrivateAccountException(f"{username} is a private account")
         user_id = self.get_user_id_by_username(username)
         liked_users, total_likes_count = self.get_user_likes(user_id)
         if not liked_users and not total_likes_count:
-            if self.check_user_is_private_by_screen_name(username):
-                raise Exception("Private account, i have no access to his/her likes")
             raise Exception("This user has no likes")
         liked_users = dict(Counter(liked_users))
 

@@ -3,6 +3,7 @@ from src.redis_handler import Redis
 from src.image_generator import merge_images, check_output_image_is_present
 from src.utils import generate_private_output_address
 from src.exceptions import (
+    PrivateAccountException,
     RateLimitException
 )
 
@@ -149,6 +150,9 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
             logging.error(e.message)
             redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
             return
+        except PrivateAccountException as e:
+            logging.error(e.message)
+            # TODO: Send a message (based on the type of the request) to the user
         except Exception as e:
             logging.error(e)
             logging.error(username, tweet_id)
@@ -205,6 +209,9 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
                 logging.error(e.message)
                 redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
                 return
+            except PrivateAccountException as e:
+                logging.error(e.message)
+                # TODO: Send a message (based on the type of the request) to the user
             except Exception as e:
                 logging.error(e)
                 return
