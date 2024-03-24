@@ -12,6 +12,9 @@ class Redis:
     def add_event_to_queue(self, event: str, queue: str = "liking_users") -> None:
         self.client.rpush(queue, "####".join(event))
 
+    def add_event_to_head_of_the_queue(self, event: str, queue: str = "liking_users") -> None:
+        self.client.lpush(queue, "####".join(event))
+
     def add_username_to_progressing(self, username: str, queue: str) -> None:
         self.client.rpush(queue, username)
 

@@ -2,6 +2,9 @@ from src.twitter_handler import Twitter
 from src.redis_handler import Redis
 from src.image_generator import merge_images, check_output_image_is_present
 from src.utils import generate_private_output_address
+from src.exceptions import (
+    RateLimitException
+)
 
 from decouple import config
 
@@ -130,7 +133,7 @@ def most_liking_users(username: str, tweet_id, type: str = "t"):
         twitter_client.send_output_in_reply(image_path, tweet_id)
         logging.info(f"result for {username} in {image_path} tweeted")
 
-def most_liked_users(username: str, tweet_id, type: str = "t"):
+def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "liked_users"):
     if type == "c":
         try:
             logging.info(f"Trying to cache output for {username}")
@@ -142,6 +145,10 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
                     return
             # If renewing is mandatory or there is no output for this user, make an output
             liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
+        except RateLimitException as e:
+            logging.error(e.message)
+            redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
+            return
         except Exception as e:
             logging.error(e)
             logging.error(username, tweet_id)
@@ -192,8 +199,15 @@ def most_liked_users(username: str, tweet_id, type: str = "t"):
         # If there was no record for this user on database
         # TODO: Move this to redis
         if RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS or not users:
-            liked_users, total_likes = twitter_client.get_user_most_liked_users(username, NUMBER_OF_RESULTS)
-
+            try:
+                liked_users, total_likes = twitter_client.get_user_most_liked_users(username, NUMBER_OF_RESULTS)
+            except RateLimitException as e:
+                logging.error(e.message)
+                redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
+                return
+            except Exception as e:
+                logging.error(e)
+                return
             users = []
             for screen_name in liked_users:
                 users.append(

@@ -8,6 +8,9 @@ from src.messages import (
     PRIVATE_OUTPUT_MESSAGE,
     RESULT_TWEET_TEXTS
 )
+from src.exceptions import (
+    RateLimitException
+)
 
 import requests
 import datetime
@@ -206,7 +209,7 @@ class Twitter():
                     if i != NUM_OF_RETRIES - 1:
                         sleep((i + 3) * 60)
                         continue
-                    return liked_users, total_likes_count
+                    raise RateLimitException()
 
             # User info in each entry:
             # entry.get("content").get("itemContent").get("tweet_results").get("result").get("core").get("user_results").get("result").get("legacy")
