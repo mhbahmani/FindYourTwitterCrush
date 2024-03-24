@@ -33,17 +33,24 @@ NUM_OF_RETRIES = 5
 
 
 class Twitter():
-    CONFIG_FILE_PATH = "config/twitter.json"
+    DEFAULT_CONFIG_FILE_PATH = "config/twitter.json"
     BOT_CONFIG_FILE_PATH = "config/twitter_bot.json"
-    BACKUP_CONFIG_FILE_PATH = "config/twitter_backup.json"
+    BACKUP_DEFAULT_CONFIG_FILE_PATH = "config/twitter_backup.json"
 
     def __init__(self) -> None:
-        self.cookies, self.headers = self.load_twitter_config(Twitter.CONFIG_FILE_PATH)
         self.bot_cookies, self.bot_headers = self.load_twitter_config(Twitter.BOT_CONFIG_FILE_PATH)
 
-        if config("BACKUP", cast=bool, default=False):
-            print("loading backup config")
-            self.cookies, self.headers = self.load_twitter_config(Twitter.BACKUP_CONFIG_FILE_PATH)
+        config_file_path = config("CONFIG_FILE_PATH", default=Twitter.DEFAULT_CONFIG_FILE_PATH)
+
+        if not config_file_path:
+            logging.error("Config file path not set")
+            raise Exception("Config file path not set")
+        if not os.path.exists(config_file_path):
+            logging.error(f"{config_file_path} does not exists")
+            raise Exception("Config file not found")
+
+        logging.info(f"Loading {config_file_path} config")
+        self.cookies, self.headers = self.load_twitter_config(config_file_path)
 
         CONSUMER_KEY = config("CONSUMER_KEY")
         CONSUMER_SECRET = config("CONSUMER_SECRET")
