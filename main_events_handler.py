@@ -1,7 +1,7 @@
 from src.twitter_handler import Twitter
 from src.redis_handler import Redis
 from src.image_generator import merge_images, check_output_image_is_present
-from src.utils import generate_private_output_address
+from src.utils import generate_private_output_address, get_twitter_config_name
 from src.exceptions import (
     PrivateAccountException,
     RateLimitException
@@ -18,7 +18,7 @@ import logging
 logging.basicConfig(
     filename="events_handler.log",
     filemode="a",
-    format='%(asctime)s - %(levelname)s - %(message)s',
+    format='%(asctime)s - %(levelname)s' + f' - {get_twitter_config_name()}' + ' - %(message)s',
     level={
         'INFO': logging.INFO,
         'DEBUG': logging.DEBUG,
@@ -208,9 +208,11 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
             except RateLimitException as e:
                 logging.error(e.message)
                 redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
-                return
+                logging.info("Going to sleep for 1 hour")
+                time.sleep(60 * 60)
             except PrivateAccountException as e:
-                logging.error(e.message)
+                logging.error(f"\"{username}\" is private, skipping")
+                return
                 # TODO: Send a message (based on the type of the request) to the user
             except Exception as e:
                 logging.error(e)
