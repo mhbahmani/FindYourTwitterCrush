@@ -845,7 +845,7 @@ class Twitter():
 
     def check_username_exists(self, screen_name: str) -> bool:
         try:
-            if not self.get_user_by_screen_name(screen_name):
+            if not self.get_full_user_info_by_screen_name(screen_name).get("data").get("user").get("result").get("rest_id"):
                 return False
         except Exception as e:
             return False
