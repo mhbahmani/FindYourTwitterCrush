@@ -167,7 +167,9 @@ async def handle_outputs():
                 await client.send_message(user_id, generate_result_tweet_text(), file=image_path)
                 if SEND_SUPPORT_MSG:
                     await client.send_message(user_id, SUPPORT_MSG)
-                waiting_users_liked.remove(str(user_id))
+                waiting_users_liked.remove(user_id)
+        except KeyError as e:
+            pass
         except Exception as e:
             logging.error(f"Something went wrong on handling outputs: {e}")
         finally:
@@ -198,9 +200,9 @@ def load_waiting_users():
     #     handled_users_liked.add(username)
 
     for user_id in redis_client.get_all_user_ids_in_liked_queue():
-        waiting_users_liking.add(user_id)
+        waiting_users_liking.add(int(user_id))
     for user_id in redis_client.get_all_user_ids_in_liked_queue():
-        waiting_users_liked.add(user_id)
+        waiting_users_liked.add(int(user_id))
 
 if __name__ == "__main__":
     load_waiting_users()
