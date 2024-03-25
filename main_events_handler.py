@@ -210,6 +210,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
                 redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
                 logging.info("Going to sleep for 1 hour")
                 time.sleep(60 * 60)
+                return
             except PrivateAccountException as e:
                 logging.error(f"\"{username}\" is private, skipping")
                 return
