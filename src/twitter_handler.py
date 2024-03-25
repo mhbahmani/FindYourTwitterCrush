@@ -56,6 +56,9 @@ class Twitter():
         logging.info(f"Loading {config_file_path} config")
         self.cookies, self.headers = self.load_twitter_config(config_file_path)
 
+        # Check config
+        self.check_twitter_account_is_ok()
+
         CONSUMER_KEY = config("CONSUMER_KEY")
         CONSUMER_SECRET = config("CONSUMER_SECRET")
         ACCESS_TOKEN = config("ACCESS_TOKEN")
@@ -827,6 +830,10 @@ class Twitter():
             sleep(5)
 
         return followings
+
+    def check_twitter_account_is_ok(self) -> bool:
+        pass
+        # TODO: Raise different exceptions
 
     def load_twitter_config(self, path: str):
         if not os.path.exists(path):
