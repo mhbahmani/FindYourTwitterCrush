@@ -18,6 +18,9 @@ class Redis:
     def add_username_to_progressing(self, username: str, queue: str) -> None:
         self.client.rpush(queue, username)
 
+    def remove_event_from_queue(self, event: str, queue: str) -> None:
+        self.client.lrem(name=queue, count=2, value="####".join(event))
+
     def get_event_from_queue(self, queue: str) -> str:
         event = self.client.lpop(queue)
         if event:
@@ -43,6 +46,16 @@ class Redis:
 
     def get_all_user_ids_in_liked_queue(self):
         return [user.decode("utf-8").split("####")[1] for user in list(self.client.lrange("liked_users", 0, -1))]
+
+    def get_events_in_queue_by_index_range(self, start_index: int, end_index: int, queue: str) -> list:
+        return [
+            {
+                "screen_name": event.decode("utf-8").split("####")[0],
+                "user_id": event.decode("utf-8").split("####")[1],
+                "request_type": event.decode("utf-8").split("####")[2]
+            }
+            for event in list(self.client.lrange(queue, start_index, end_index))
+        ]
 
     def get_all_liked_blocked_user_ids(self):
         return [user.decode("utf-8").split("####")[1] for user in list(self.client.lrange("liked_users_all_blocked", 0, -1))]

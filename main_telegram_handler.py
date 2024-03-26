@@ -1,5 +1,7 @@
 from telethon import TelegramClient, events
+from telethon.errors import UserIsBlockedError
 from decouple import config
+from time import sleep
 
 from src.redis_handler import Redis
 from src.db import DB
@@ -49,6 +51,7 @@ LIMITED_ACCESS_FOR_MY_FOLLOWINGS = config("LIMITED_ACCESS_FOR_MY_FOLLOWINGS", de
 ALLOW_REQUESTS_WHEN_QUEUE_SIZE_IS_LOW = config("ALLOW_REQUESTS_WHEN_QUEUE_SIZE_IS_LOW", default=True, cast=bool)
 QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS = config("QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS", default=1, cast=int)
 
+ADMIN_USER_ID = config("ADMIN_USER_ID", cast=int)
 NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_IDS").split(",")]
 
 waiting_users_liking = set() # List of user_ids
@@ -81,7 +84,7 @@ async def start_handler(event):
 @client.on(events.NewMessage())
 async def username_handler(event):
     text = event.raw_text
-    if text == "/start":
+    if text == "/start" or "sendthistoallinblockedqueue" in text:
         return
     # print(text)
     user_id = event.original_update.message.peer_id.user_id
@@ -174,6 +177,44 @@ async def handle_outputs():
             logging.error(f"Something went wrong on handling outputs: {e}")
         finally:
             await asyncio.sleep(10)
+
+
+@client.on(events.NewMessage(pattern=r"/sendthistoallinblockedqueue.*"))
+async def send_to_all_in_blockd_queue_users_handler(event):
+    if event.original_update.message.peer_id.user_id != ADMIN_USER_ID:
+        return
+    
+    logging.info("Sending a message to all users that are in blocked queue")
+    
+    message = event.raw_text.split("/sendthistoallinblockedqueue")[-1].strip()
+    await client.send_message(ADMIN_USER_ID, message, link_preview=False)
+
+    start = 0
+    end = start + 30
+    while True:
+        removed_users_count_in_this_iteration = 0
+        events = redis_client.get_events_in_queue_by_index_range(start, end, "liked_users_blocked")
+        if not events: break
+
+        for _event in events:
+            try:
+                logging.info(f"Message sent to {_event.get('user_id')}")
+                await client.send_message(int(_event.get("user_id")), message, link_preview=False)
+            except UserIsBlockedError as e:
+                logging.info(f"User {_event.get('screen_name')} {_event.get('user_id')} blocked the bot, removing from queue")
+                redis_client.remove_event_from_queue([_event.get("screen_name"), _event.get("user_id"), _event.get("request_type")], "liked_users_blocked")
+                removed_users_count_in_this_iteration += 1
+            except Exception as e:
+                logging.error(e)
+                logging.error(f"Error on user {_event.get('screen_name')} {_event.get('user_id')}")
+
+        logging.info(f"Message sent to {len(events)} users, from index {start} to {end}")
+        sleep(5)
+
+        start = end + 1 - removed_users_count_in_this_iteration
+        end = start + 30
+
+    logging.info("Message sent to all the users in blocked queue")
 
 
 async def load_followings():
