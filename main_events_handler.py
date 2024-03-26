@@ -141,21 +141,23 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
             # If renewing is not necessary and there is already an output for this user,
             # skip the request
             if not RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS \
-                and check_output_image_is_present(username, "liking"):
-                    logging.info(f"There is already an output of type liking for {username}")
+                and check_output_image_is_present(username, "liked"):
+                    logging.info(f"There is already an output of type liked for {username}")
                     return
             # If renewing is mandatory or there is no output for this user, make an output
             liked_users, total_likes = twitter_client.get_user_most_liked_users(username)
         except RateLimitException as e:
             logging.error(e.message)
             redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
+            logging.info("Going to sleep for 5 hours")
+            time.sleep(5 * 60 * 60)
             return
         except PrivateAccountException as e:
-            logging.error(e.message)
+            logging.error(f"\"{username}\" is private, skipping")
+            return
             # TODO: Send a message (based on the type of the request) to the user
         except Exception as e:
             logging.error(e)
-            logging.error(username, tweet_id)
             return
 
         users = []
