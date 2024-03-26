@@ -166,7 +166,7 @@ async def handle_outputs():
                 logging.info(f"Send {image_path} for {user_id} in telegram")
                 await client.send_message(user_id, generate_result_tweet_text(), file=image_path)
                 if SEND_SUPPORT_MSG:
-                    await client.send_message(user_id, SUPPORT_MSG)
+                    await client.send_message(user_id, SUPPORT_MSG, link_preview=False)
                 waiting_users_liked.remove(user_id)
         except KeyError as e:
             pass
