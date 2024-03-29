@@ -109,7 +109,7 @@ async def username_handler(event):
 
     # fetch the part of the text that matchs with https://.*
     text = text.split("?")[0]
-    profile_url = re.findall(r'https://.*', text)
+    profile_url = re.findall(r'[h|H]ttps://.*', text)
     if not profile_url:
         twitter_username = re.findall(r'[a-zA-Z0-9_]+', text)
         if not twitter_username:
