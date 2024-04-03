@@ -25,7 +25,7 @@ IMAGE_X = 426
 IMAGE_Y = 420
 
 
-def merge_images(data: list, likes_avg: float = -1, username: str = None, total_likes: int = -1, private: bool = False) -> str:
+def merge_images(data: list, likes_avg: float = -1, username: str = None, total_likes: int = -1, private: bool = False, short_version: bool = False) -> str:
     """
     Output: Path of the merged image
     """
@@ -75,7 +75,11 @@ def merge_images(data: list, likes_avg: float = -1, username: str = None, total_
     en_font = ImageFont.truetype(EN_FONT_PATH, 40)
     pr_font = ImageFont.truetype(FA_FONT_PATH, 50)
     image_draw = ImageDraw.Draw(merged_image)
-    template_text = "{} - {}%" if likes_avg != -1 else "{} - {}"
+    if not short_version:
+        template_text = "{} - {}%" if likes_avg != -1 else "{} - {}"
+    else:
+        template_text = "{}" if likes_avg != -1 else "{}"
+
     for i in range(len(images)):
         # Write account name and score middle of the image
         if likes_avg == -1:
@@ -94,11 +98,12 @@ def merge_images(data: list, likes_avg: float = -1, username: str = None, total_
             image_draw.text((images_location[i][0] + 10 + int(IMAGE_X / 2 - len(data[i][3]) / 2 * 25), images_location[i][1] + 480), f"{data[i][3]}", fill=(0,0,0), font=en_font)
 
     font = ImageFont.truetype(EN_FONT_PATH, 60)
-    if likes_avg != -1:
-        # Write average score in the buttom middle of the image
-        image_draw.text((X/2 - 170, Y - 100), f"Average: {'{:.1f}'.format(likes_avg)}", fill=(0,0,0), font=font)
-    if total_likes != -1: 
-        image_draw.text((X/2 - 200, Y - 100), f"Total likes: {total_likes}", fill=(0,0,0), font=font)
+    if not short_version:
+        if likes_avg != -1:
+            # Write average score in the buttom middle of the image
+            image_draw.text((X/2 - 170, Y - 100), f"Average: {'{:.1f}'.format(likes_avg)}", fill=(0,0,0), font=font)
+        if total_likes != -1: 
+            image_draw.text((X/2 - 200, Y - 100), f"Total likes: {total_likes}", fill=(0,0,0), font=font)
 
     output_path = retrieve_image_path(username, "liking" if likes_avg != -1 else "liked", private)
 

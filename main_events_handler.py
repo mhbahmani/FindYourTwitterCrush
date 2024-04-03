@@ -41,6 +41,8 @@ HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG = \
 # This variable shows the amount of time the queue should be empty for the handler to check the blocked queue
 EMPTY_QUEUE_COUNTER_TRESHOLD = config("EMPTY_QUEUE_COUNTER_TRESHOLD", default=100, cast=int)
 
+SHORT_VERSION_OUTPUT = config("SHORT_VERSION_OUTPUT", default=False, cast=bool)
+
 
 def most_liking_users(username: str, tweet_id, type: str = "t"):
     if type == "c":
@@ -170,7 +172,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
                     liked_users.get(screen_name, {}).get("name")
                 ]
             )
-        image_path = merge_images(data=users, username=username, total_likes=total_likes)
+        image_path = merge_images(data=users, username=username, total_likes=total_likes, short_version=SHORT_VERSION_OUTPUT)
 
         db_client.add_handled_liked({
             "username": username,
@@ -243,7 +245,7 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
         return
 
     private = True if type == "d" else False
-    image_path = merge_images(data=users, username=username, total_likes=total_likes, private=private)
+    image_path = merge_images(data=users, username=username, total_likes=total_likes, private=private, short_version=SHORT_VERSION_OUTPUT)
     if type == "d":
         user_id = tweet_id
         if not user_id:
