@@ -34,7 +34,7 @@ else: FETCH_LIKES_COUNT = 3000
 DOUBLE_QUOTE_CHAR = "\""
 LIKES_PER_EACH_REQUEST = 100
 
-NUM_OF_LOOKED_UP_TWEETS = 500
+NUM_OF_LOOKED_UP_TWEETS = 200
 TWEET_LIKE_TRESHOLD = 200
 NUM_OF_RETRIES = 5
 
@@ -322,12 +322,14 @@ class Twitter():
         return tweet_info.get("user_results", {}).get("result", {}).get("legacy", {})
 
     def get_user_tweets(self, user_id: str, tweet_time_days_treshold: int = None, ignore_mentions: bool = True) -> set:
+       # This function just gets the tweets and mentions and replies are not included
         """
             Output: {tweet_id, ...}
         """
         tweet_ids = set()
         cursor = None
         i = 0
+        logging.info(f"Getting tweets of {user_id}")
         while True:
             params = {
                 'variables': f"{{\"userId\":\"{user_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":100,\"includePromotedContent\":true,\"withQuickPromoteEligibilityTweetFields\":true,\"withVoice\":true,\"withV2Timeline\":true}}",
@@ -375,8 +377,9 @@ class Twitter():
             cursor = entries[-1].get("content", {}).get("value")
             if not cursor: break
 
+            logging.info("Fetched " + str(len(tweet_ids)) + " tweets") 
             if len(tweet_ids) >= NUM_OF_LOOKED_UP_TWEETS: break
-            sleep(5)
+            sleep(30)
 
         return tweet_ids
 
@@ -422,6 +425,7 @@ class Twitter():
             if entries[-1].get("content", {}).get("cursorType") == "Bottom":
                 cursor = entries[-1].get("content", {}).get("value")
             if not cursor: break
+            sleep(5)
 
         return liked_users
 
@@ -439,12 +443,18 @@ class Twitter():
         for tweet_id in tweets:
             logging.info(f"{int(counter / len(tweets) * 100)}% has been processed {tweet_id} {username}")
             while True:
+                liking_users = dict()
                 try:
                     liking_users = self.get_tweet_liking_users(tweet_id)
                     break
+                except AttributeError as e:
+                    logging.error(e)
+                    logging.error("Tweet id: " + str(tweet_id) + ", Moving to the next tweet")
+                    sleep(60)
+                    break
                 except Exception as e:
                     logging.error(e)
-                    sleep_time = 30
+                    sleep_time = 600
                     logging.info(f"Waiting {sleep_time} sconds")
                     sleep(sleep_time)
                     logging.info("Trying again")
@@ -458,7 +468,7 @@ class Twitter():
                     "profile_image_url": liking_users[screen_name].get("profile_image_url"),
                     "count": liking_users_data.get(screen_name, {"count": 0}).get("count", 0) + 1
                 }
-            sleep(5)
+            sleep(30)
 
         most_liking_users = dict(sorted(liking_users_data.items(), key=lambda x: x[1].get("count"), reverse=True)[:number_of_results])
         for _username in most_liking_users.keys():
