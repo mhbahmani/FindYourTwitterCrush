@@ -394,6 +394,7 @@ class Twitter():
         """
         liked_users = {}
         cursor = None
+        previous_cursor = None
         while True:
             params = {
                 'variables': f"{{\"tweetId\":\"{tweet_id}\"{f',{DOUBLE_QUOTE_CHAR}cursor{DOUBLE_QUOTE_CHAR}:' + f'{DOUBLE_QUOTE_CHAR}{cursor}{DOUBLE_QUOTE_CHAR}' if cursor else ''},\"count\":100,\"includePromotedContent\":true}}",
@@ -423,8 +424,11 @@ class Twitter():
             if not entries: break
 
             if entries[-1].get("content", {}).get("cursorType") == "Bottom":
+                previous_cursor = cursor
                 cursor = entries[-1].get("content", {}).get("value")
-            if not cursor: break
+            if not cursor or \
+                cursor == previous_cursor:
+                break
             sleep(5)
 
         return liked_users
@@ -433,7 +437,7 @@ class Twitter():
         user_id = self.get_user_id_by_username(username)
         tweets = list(self.get_user_tweets(
             user_id=user_id,
-            tweet_time_days_treshold=365,
+            tweet_time_days_treshold=3,
             ignore_mentions=True
         ))
 
