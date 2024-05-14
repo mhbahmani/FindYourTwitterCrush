@@ -394,6 +394,7 @@ class Twitter():
         """
         liked_users = {}
         cursor = None
+        # If cursor is not None, but it's the same as previous cursor, break the loop
         previous_cursor = None
         while True:
             params = {
