@@ -261,8 +261,10 @@ def most_liked_users(username: str, tweet_id, type: str = "t", queue: str = "lik
         twitter_client.send_output_in_reply(image_path, tweet_id)
         logging.info(f"result for {username} in {image_path} tweeted")
 
+
+ACTION = config("ACTION", default="liked_users")
 # ACTION = "liking_users"
-ACTION = "liked_users"
+# ACTION = "liked_users"
 
 
 if __name__ == "__main__":
