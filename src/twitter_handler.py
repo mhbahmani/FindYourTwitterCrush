@@ -438,7 +438,7 @@ class Twitter():
         user_id = self.get_user_id_by_username(username)
         tweets = list(self.get_user_tweets(
             user_id=user_id,
-            tweet_time_days_treshold=3,
+            tweet_time_days_treshold=365,
             ignore_mentions=True
         ))
 
