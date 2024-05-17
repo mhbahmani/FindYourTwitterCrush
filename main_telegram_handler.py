@@ -7,7 +7,7 @@ from src.redis_handler import Redis
 from src.db import DB
 from src.utils import generate_result_tweet_text
 from src.twitter_handler import Twitter
-from src.static_data import REQUEST_SOURCE
+from src.static_data import REQUEST_SOURCE, REQUEST_TYPE
 from src.messages import (
     too_many_requests_msg,
     request_accepted_msg,
@@ -42,6 +42,7 @@ loop = asyncio.get_event_loop()
 
 QUEUE = config("QUEUE", "liked_users")
 QUEUE_BLOCKED = QUEUE + "_blocked"
+QUEUE_ALL_BLOCKED = QUEUE + "_all_blocked"
 QUEUE_DONE = QUEUE + "_done"
 REQUEST_LIMIT = 1
 
@@ -60,7 +61,10 @@ NO_LIMIT_USER_IDS = [int(user_id.strip()) for user_id in config("NO_LIMIT_USER_I
 waiting_users_liking = set() # List of user_ids
 waiting_users_liked = set() # List of user_ids
 # This is required for cases that people send multiple requests and get access denied
-blocked_users = set()
+blocked_users = {
+    REQUEST_TYPE.LIKING.value: set(),
+    REQUEST_TYPE.LIKED.value: set()
+}
 
 db_client = DB()
 redis_client = Redis()
@@ -135,9 +139,10 @@ async def username_handler(event):
         and not twitter_username.lower() in followings:
         logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}, user_id: {user_id}")
         await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
-        if not user_id in blocked_users:
+        if not user_id in blocked_users[QUEUE]:
             redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_SOURCE.BOT.value], QUEUE_BLOCKED)
-            blocked_users.add(user_id)
+            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_SOURCE.BOT.value], QUEUE_ALL_BLOCKED)
+            blocked_users[QUEUE].add(user_id)
         return
     
     if twitter_client.check_user_is_private_by_screen_name(twitter_username):
@@ -231,7 +236,9 @@ async def load_followings():
 def load_all_liked_request_blocked_users():
     logging.info("Loading blocked user ids")
     for user_id in redis_client.get_all_liked_blocked_user_ids():
-        blocked_users.add(int(user_id))
+        blocked_users[REQUEST_TYPE.LIKED.value].add(int(user_id))
+    for user_id in redis_client.get_all_liked_blocked_user_ids():
+        blocked_users[REQUEST_TYPE.LIKING.value].add(int(user_id))
 
 def load_waiting_users():
     logging.info("Loading warting users ids")
