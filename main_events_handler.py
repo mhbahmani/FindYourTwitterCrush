@@ -277,13 +277,13 @@ if __name__ == "__main__":
             if HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG:
                 empty_queue_counter += 1
                 if empty_queue_counter > EMPTY_QUEUE_COUNTER_TRESHOLD:
-                    logging.info("Checking blocked queue")
+                    logging.info(f"Checking {ACTION}_blocked queue")
                     event = redis_client.get_event_from_queue(ACTION + "_blocked")
             # If an event fetched or HANDLE_BLOCKED_USERS_WHEN_QUEUE_IS_EMPTY_FOR_TOO_LONG is not set
             if not event:
                 time.sleep(5)
                 continue
-        
+
         empty_queue_counter = 0
 
         username, tweet_id, type = event
