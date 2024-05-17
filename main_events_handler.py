@@ -63,6 +63,7 @@ def handle_request(username: str, tweet_id, type: str = "t", queue: str = "liked
             # users is a dictionary of users
             # likes_count is likes average (in case of liking users) or total number of likes (in case of liked users)
             users, likes_count = handler(username)
+            logging.info(f"Running cache handler of type {queue} for {username} ended")
         except RateLimitException as e:
             logging.error(e.message)
             redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)
