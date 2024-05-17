@@ -7,7 +7,7 @@ from src.redis_handler import Redis
 from src.db import DB
 from src.utils import generate_result_tweet_text
 from src.twitter_handler import Twitter
-from src.static_data import REQUEST_TYPE
+from src.static_data import REQUEST_SOURCE
 from src.messages import (
     too_many_requests_msg,
     request_accepted_msg,
@@ -136,7 +136,7 @@ async def username_handler(event):
         logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}, user_id: {user_id}")
         await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
         if not user_id in blocked_users:
-            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], QUEUE_BLOCKED)
+            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_SOURCE.BOT.value], QUEUE_BLOCKED)
             blocked_users.add(user_id)
         return
     
@@ -151,7 +151,7 @@ async def username_handler(event):
         return
 
     print("Adding", twitter_username, "to queue", QUEUE, "tweet_id", user_id)
-    redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], queue=QUEUE)
+    redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_SOURCE.BOT.value], queue=QUEUE)
 
     await client.send_message(user_id, request_accepted_msg, link_preview=False)
     
