@@ -417,6 +417,8 @@ class Twitter():
                 if not "user" in entry.get("entryId"):
                     continue
                 user = entry.get("content", {}).get("itemContent", {}).get("user_results", {}).get("result", {})
+                if not user: # In some cases, user_results is empty
+                    continue
                 liked_users[user.get("legacy").get("screen_name")] = {
                     "name": user.get("legacy").get("name"),
                     "profile_image_url": self.fix_image_address(user.get("legacy").get("profile_image_url_https")),
