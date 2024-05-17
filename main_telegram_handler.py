@@ -223,7 +223,7 @@ async def load_followings():
         return
     while True:
         global followings
-        followings = [user.get("screen_name") for user in twitter_client.get_user_followings_in_lower_case("mh_bahmani")]
+        followings = [user.get("screen_name").lower() for user in twitter_client.get_user_followings("mh_bahmani")]
         logging.info(f"mh_bahmani followings loaded")
         await asyncio.sleep(60 * 60)
 
