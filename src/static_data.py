@@ -1,11 +1,15 @@
 from enum import Enum
 
 
-class REQUEST_TYPE(Enum):
+class REQUEST_SOURCE(Enum):
     DIRECT = "d"
     TWEET = "t"
     CACHE = "c"
     BOT = "b"
+
+class REQUEST_TYPE(Enum):
+    LIKING = "liking_users"
+    LIKED = "liked_users"
 
 
 TWITTER_CONFIG_PATH_TO_NAME = {
