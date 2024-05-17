@@ -412,6 +412,9 @@ class Twitter():
             if response.status_code != http.HTTPStatus.OK:
                 raise Exception("Request failed to get tweet likes with status code: " + str(response.status_code))
             
+            if not response.json().get("data", {}).get("favoriters_timeline", {}).get("timeline", {}).get("instructions", [{"entries": []}]):
+                # No like found
+                break
             entries = response.json().get("data", {}).get("favoriters_timeline", {}).get("timeline", {}).get("instructions", [{"entries": []}])[-1].get("entries", [])
             for entry in entries:
                 if not "user" in entry.get("entryId"):
