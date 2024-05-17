@@ -40,6 +40,9 @@ logging.basicConfig(
 
 loop = asyncio.get_event_loop()
 
+QUEUE = config("QUEUE", "liked_users")
+QUEUE_BLOCKED = QUEUE + "_blocked"
+QUEUE_DONE = QUEUE + "_done"
 REQUEST_LIMIT = 1
 
 api_id = config("CLIENT_API_ID")
@@ -102,7 +105,7 @@ async def username_handler(event):
         pass
 
     if not user_id in NO_LIMIT_USER_IDS \
-        and redis_client.get_user_request_count(str(user_id), "liked_users") >= REQUEST_LIMIT:
+        and redis_client.get_user_request_count(str(user_id), QUEUE) >= REQUEST_LIMIT:
         logging.info(f"Block request because of passing the request limit, user_id: {user_id}, username: {username}, text: {text}")
         await client.send_message(user_id, too_many_requests_msg.format(REQUEST_LIMIT))
         return
@@ -127,14 +130,13 @@ async def username_handler(event):
             return
 
     if LIMITED_ACCESS_FOR_MY_FOLLOWINGS \
-        and (not ALLOW_REQUESTS_WHEN_QUEUE_SIZE_IS_LOW or redis_client.get_queue_size("liked_users") > QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS) \
+        and (not ALLOW_REQUESTS_WHEN_QUEUE_SIZE_IS_LOW or redis_client.get_queue_size(QUEUE) > QUEUE_SIZE_TRESHOLD_ON_LIMITED_ACCESS) \
         and not user_id in NO_LIMIT_USER_IDS \
         and not twitter_username.lower() in followings:
         logging.info(f"Access denied to username: {username}, twiiter_username: {twitter_username}, user_id: {user_id}")
         await client.send_message(user_id, ACCESS_DENIED_MSG, link_preview=False)
         if not user_id in blocked_users:
-            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], "liked_users_blocked")
-            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], "liked_users_all_blocked")
+            redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], QUEUE_BLOCKED)
             blocked_users.add(user_id)
         return
     
@@ -143,26 +145,24 @@ async def username_handler(event):
         await client.send_message(user_id, PRIVATE_ACCOUNT_ERROR_MSG.format(twitter_username))
         return
 
-    # in_progress_usernames = redis_client.get_all_progressing_events("liked_users")
+    # in_progress_usernames = redis_client.get_all_progressing_events(QUEUE)
     if user_id in waiting_users_liked:
         await client.send_message(user_id, already_got_your_request_msg)
         return
 
-    print("= Adding", twitter_username, "to queue liked_users, user_id", user_id)
-    redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], queue="liked_users")
-    print("* Adding", twitter_username, "to queue liking_users, tweet_id", user_id)
-    redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], queue="liking_users")
+    print("Adding", twitter_username, "to queue", QUEUE, "tweet_id", user_id)
+    redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_TYPE.BOT.value], queue=QUEUE)
 
     await client.send_message(user_id, request_accepted_msg, link_preview=False)
     
     waiting_users_liked.add(user_id)
-    redis_client.increase_user_request_count(str(user_id), "liked_users")
+    redis_client.increase_user_request_count(str(user_id), QUEUE)
 
 
 async def handle_outputs():
     while True:
         try:
-            event = redis_client.get_event_from_queue("liked_users_done")
+            event = redis_client.get_event_from_queue(QUEUE_DONE)
             if event:
                 _, user_id, image_path = event
                 user_id = int(user_id)
@@ -193,7 +193,7 @@ async def send_to_all_in_blockd_queue_users_handler(event):
     end = start + 30
     while True:
         removed_users_count_in_this_iteration = 0
-        events = redis_client.get_events_in_queue_by_index_range(start, end, "liked_users_blocked")
+        events = redis_client.get_events_in_queue_by_index_range(start, end, QUEUE_BLOCKED)
         if not events: break
 
         for _event in events:
@@ -202,7 +202,7 @@ async def send_to_all_in_blockd_queue_users_handler(event):
                 await client.send_message(int(_event.get("user_id")), message, link_preview=False)
             except UserIsBlockedError as e:
                 logging.info(f"User {_event.get('screen_name')} {_event.get('user_id')} blocked the bot, removing from queue")
-                redis_client.remove_event_from_queue([_event.get("screen_name"), _event.get("user_id"), _event.get("request_type")], "liked_users_blocked")
+                redis_client.remove_event_from_queue([_event.get("screen_name"), _event.get("user_id"), _event.get("request_type")], QUEUE_BLOCKED)
                 removed_users_count_in_this_iteration += 1
             except Exception as e:
                 logging.error(e)
@@ -225,7 +225,7 @@ async def load_followings():
         global followings
         followings = [user.get("screen_name").lower() for user in twitter_client.get_user_followings("mh_bahmani")]
         logging.info(f"mh_bahmani followings loaded")
-        await asyncio.sleep(60 * 60)
+        await asyncio.sleep(60 * 60 * 5)
 
 
 def load_all_liked_request_blocked_users():
@@ -246,11 +246,10 @@ def load_waiting_users():
         waiting_users_liked.add(int(user_id))
 
 if __name__ == "__main__":
+    logging.info("Starting the bot for queue: " + QUEUE)
     load_waiting_users()
     load_all_liked_request_blocked_users()
     client.start()
     loop.create_task(handle_outputs())
     loop.create_task(load_followings())
-    print("start")
     client.run_until_disconnected()
-    print("disconnected")
