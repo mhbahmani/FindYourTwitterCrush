@@ -3,7 +3,7 @@ from collections import Counter
 from time import sleep
 from pytz import UTC
 
-from src.static_data import REQUEST_TYPE
+from src.static_data import REQUEST_SOURCE
 from src.messages import (
     PRIVATE_OUTPUT_MESSAGE,
     RESULT_TWEET_TEXTS
@@ -101,7 +101,7 @@ class Twitter():
                             repliers_with_tweet_id[screen_name] = [
                                 screen_name,
                                 _item.get("item", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
-                                REQUEST_TYPE.CACHE.value
+                                REQUEST_SOURCE.CACHE.value
                             ]
                 else:
                     screen_name = entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("core", {}).get("user_results", {}).get("result", {}).get("legacy", {}).get("screen_name")
@@ -109,7 +109,7 @@ class Twitter():
                         repliers_with_tweet_id[screen_name] = [
                             screen_name,
                             entry.get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id"),
-                            REQUEST_TYPE.CACHE.value
+                            REQUEST_SOURCE.CACHE.value
                         ]
                     
             if entries[-1] and entries[-1].get("content", {}).get("itemContent", {}).get("cursorType") == "Bottom":
@@ -565,13 +565,14 @@ class Twitter():
     def get_user_most_liked_users(self, username: str, number_of_results: int = 12) -> dict:
         """
         Output:
-        {
-            screen_name: {
+        (
+            {screen_name: {
                 name: ,
                 profile_image_url: ,
                 count:        
-            },
-        }
+            }},
+            total_likes_count: int
+        )
         """
         if self.check_user_is_private_by_screen_name(username):
             raise PrivateAccountException(f"{username} is a private account")
