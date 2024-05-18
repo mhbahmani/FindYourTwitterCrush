@@ -89,11 +89,6 @@ def handle_request(username: str, tweet_id, type: str = "t", queue: str = "liked
                 ]
             )
         if queue == REQUEST_TYPE.LIKED.value:
-            image_path = merge_images(data=users_data, username=username, total_likes=likes_count, short_version=SHORT_VERSION_OUTPUT)
-        elif queue == REQUEST_TYPE.LIKING.value:
-            image_path = merge_images(data=users_data, username=username, likes_avg=likes_count, short_version=SHORT_VERSION_OUTPUT)
-
-        if queue == REQUEST_TYPE.LIKED.value:
             db_client.add_handled_liked({
                 "username": username,
                 "result": users_data
@@ -103,6 +98,12 @@ def handle_request(username: str, tweet_id, type: str = "t", queue: str = "liked
                 "username": username,
                 "result": users_data
             })
+
+        if queue == REQUEST_TYPE.LIKED.value:
+            image_path = merge_images(data=users_data, username=username, total_likes=likes_count, short_version=SHORT_VERSION_OUTPUT)
+        elif queue == REQUEST_TYPE.LIKING.value:
+            image_path = merge_images(data=users_data, username=username, likes_avg=likes_count, short_version=SHORT_VERSION_OUTPUT)
+
         return
 
     if CHECK_IMAGE_CACHE:
