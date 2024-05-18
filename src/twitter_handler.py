@@ -231,7 +231,7 @@ class Twitter():
                 total_likes_count += 1
                 user = self.get_liked_tweet_author_user(like)
                 if not user:
-                    print(f"Something is wrong with this tweet {like}")
+                    logging.error(f"Something is wrong with this tweet {like}")
                     continue
                 liked_users[user.get("screen_name")] = {
                     "name": user.get("name"),
@@ -240,7 +240,7 @@ class Twitter():
                     "screen_name": user.get("screen_name")
                 }
 
-            print(fetched_likes_count)
+            logging.debug(f"Fetched likes count: {fetched_likes_count}")
             if fetched_likes_count >= FETCH_LIKES_COUNT: break
             
             if len(iteration_likes) < 3:
@@ -249,11 +249,11 @@ class Twitter():
             last_tweet_id = iteration_likes[-3].get("content", {}).get("itemContent", {}).get("tweet_results", {}).get("result", {}).get("rest_id")
             try:
                 last_tweet_date = self.get_tweet_creattion_date_by_id(last_tweet_id)
-                print(last_tweet_date)
+                logging.debug(f"Last tweet date: {last_tweet_date}")
                 if last_tweet_date < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=356):
                     break
             except Exception as e:
-                print(f"Error in getting tweet date {e}")
+                logging.error(f"Error in getting tweet date {e}")
 
             if iteration_likes[-1].get("content", {}).get("cursorType") == "Bottom":
                 cursor = f'"{iteration_likes[-1].get("content", {}).get("value")}"'
@@ -380,7 +380,7 @@ class Twitter():
             cursor = entries[-1].get("content", {}).get("value")
             if not cursor: break
 
-            logging.info("Fetched " + str(len(tweet_ids)) + " tweets") 
+            logging.info(f"Fetched {len(tweet_ids)} tweets for {user_id}")
             if len(tweet_ids) >= NUM_OF_LOOKED_UP_TWEETS: break
             sleep(30)
 
@@ -457,7 +457,7 @@ class Twitter():
         num_tweets = len(tweets)
         counter = total_likes = 0
         for tweet_id in tweets:
-            logging.info(f"{int(counter / len(tweets) * 100)}% has been processed {tweet_id} {username}")
+            logging.info(f"{counter}/{len(tweets)} has been processed {tweet_id} {username}")
             while True:
                 liking_users = dict()
                 try:
@@ -476,7 +476,7 @@ class Twitter():
                     logging.info("Trying again")
 
             counter += 1
-            print(len(liking_users))
+            logging.debug(f"Tweet {tweet_id} has {len(liking_users)} likes")
             total_likes += len(liking_users)
             for screen_name in liking_users:
                 liking_users_data[screen_name] = {
