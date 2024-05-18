@@ -4,6 +4,7 @@ from src.image_generator import merge_images, check_output_image_is_present
 from src.utils import generate_private_output_address, get_twitter_config_name
 from src.exceptions import (
     PrivateAccountException,
+    NoTweetUserException,
     RateLimitException
 )
 from src.static_data import (
@@ -64,6 +65,9 @@ def handle_request(username: str, tweet_id, type: str = "t", queue: str = "liked
             # likes_count is likes average (in case of liking users) or total number of likes (in case of liked users)
             users, likes_count = handler(username)
             logging.info(f"Running cache handler of type {queue} for {username} ended")
+        except NoTweetUserException as e:
+            logging.info(f"{username} did not post any tweets in the last year")
+            return
         except RateLimitException as e:
             logging.error(e.message)
             redis_client.add_event_to_head_of_the_queue([username, str(tweet_id), type], queue)

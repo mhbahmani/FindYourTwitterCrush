@@ -10,6 +10,7 @@ from src.messages import (
 )
 from src.exceptions import (
     PrivateAccountException,
+    NoTweetUserException,
     RateLimitException
 )
 
@@ -441,13 +442,16 @@ class Twitter():
 
         return liked_users
 
-    def get_user_most_liking_users(self, username: str, number_of_results: int = 12) -> list:
+    def get_user_most_liking_users(self, username: str, number_of_results: int = 12) -> tuple:
         user_id = self.get_user_id_by_username(username)
         tweets = list(self.get_user_tweets(
             user_id=user_id,
             tweet_time_days_treshold=365,
             ignore_mentions=True
         ))
+
+        if not tweets:
+            raise NoTweetUserException
 
         liking_users_data = {}
         num_tweets = len(tweets)
