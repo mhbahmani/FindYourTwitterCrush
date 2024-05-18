@@ -7,6 +7,7 @@ from src.redis_handler import Redis
 from src.db import DB
 from src.utils import generate_result_tweet_text
 from src.twitter_handler import Twitter
+from src.image_generator import check_output_image_is_present
 from src.static_data import REQUEST_SOURCE, REQUEST_TYPE
 from src.messages import (
     too_many_requests_msg,
@@ -154,6 +155,17 @@ async def username_handler(event):
     if user_id in waiting_users_liked:
         await client.send_message(user_id, already_got_your_request_msg)
         return
+
+    # Check if there is a cached output for this user
+    output_image_path_extension = QUEUE.replace("_users", "")
+    cached_path = check_output_image_is_present(twitter_username, output_image_path_extension)
+    if cached_path:
+        # Send a message in order to user know that the request is accepted
+        await client.send_message(user_id, request_accepted_msg, link_preview=False)
+        logging.info(f"Found cached image for {twitter_username} requested by {username}")
+        redis_client.add_event_to_queue([twitter_username, str(user_id), cached_path], queue=f"{QUEUE}_done")
+        return
+    logging.info(f"Adding {twitter_username} to queue {QUEUE} tweet_id {user_id}")
 
     print("Adding", twitter_username, "to queue", QUEUE, "tweet_id", user_id)
     redis_client.add_event_to_queue([twitter_username, str(user_id), REQUEST_SOURCE.BOT.value], queue=QUEUE)
