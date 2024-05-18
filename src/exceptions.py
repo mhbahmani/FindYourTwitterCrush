@@ -13,3 +13,8 @@ class PrivateAccountException(BaseException):
     def __init__(self, *args: object, message=None) -> None:
         message = message if message else "Provided account is private"
         super().__init__(message, *args)
+
+class NoTweetUserException(BaseException):
+    def __init__(self, *args: object, message=None) -> None:
+        message = message if message else "The user has no tweets"
+        super().__init__(message, *args)
