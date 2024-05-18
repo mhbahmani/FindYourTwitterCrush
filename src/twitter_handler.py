@@ -361,16 +361,18 @@ class Twitter():
                     tweets_data = [entry.get("content", {}).get("itemContent", {}).get("tweet_results").get("result", {})]
 
                 for tweet_data in tweets_data:
-                    if tweet_data.get("tweet") or \
-                        not tweet_data.get("legacy").get("favorite_count") \
-                        or tweet_data.get("legacy").get("favorite_count") > TWEET_LIKE_TRESHOLD:
+                    legacy = tweet_data.get("legacy") if tweet_data.get("legacy") else tweet_data.get("tweet").get("legacy")
+                    if ( tweet_data.get("tweet") and tweet_data.get("legacy") ) or \
+                        legacy.get("retweeted_status_result") or \
+                        not legacy.get("favorite_count") \
+                        or legacy.get("favorite_count") > TWEET_LIKE_TRESHOLD:
                         # Tweet has no faves or it's a retweet or has more than TWEET_LIKE_TRESHOLD likes
                         continue
                     if tweet_time_days_treshold and \
-                        self.convert_tweet_created_at_to_datetiem(tweet_data.get("legacy").get("created_at")) \
+                        self.convert_tweet_created_at_to_datetiem(legacy.get("created_at")) \
                         < datetime.datetime.now().astimezone(UTC) - datetime.timedelta(days=tweet_time_days_treshold):
                         return tweet_ids
-                    tweet_ids.add(tweet_data.get("rest_id"))
+                    tweet_ids.add(tweet_data.get("rest_id", tweet_data.get("tweet", {}).get("rest_id")))
 
             if not entries or\
                 len(entries) == 2:
