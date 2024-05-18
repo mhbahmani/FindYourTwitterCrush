@@ -61,9 +61,7 @@ NO_USERNAME_OF_LINK_PROVIDED_MSG = """
 https://twitter.com/mh_bahmani"""
 
 SUPPORT_MSG = """
-حتما  کارنامه‌تو توییت کن تا همه ببینیم😊
-
-[این توییت](https://twitter.com/mh_bahmani/status/1769757048814686227) رو هم لایک کن تا بقیه هم ببیننش و بیان از بات استفاده کنن😌
+بیا خروجی‌تو زیر [این توییت](https://x.com/mh_bahmani/status/1791906253146317072) منشن کن همه ببینیم 😊
 """
 
 ACCESS_DENIED_MSG = """
