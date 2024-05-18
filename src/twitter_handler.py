@@ -328,7 +328,6 @@ class Twitter():
         """
         tweet_ids = set()
         cursor = None
-        i = 0
         logging.info(f"Getting tweets of {user_id}")
         while True:
             params = {
@@ -372,7 +371,10 @@ class Twitter():
                         return tweet_ids
                     tweet_ids.add(tweet_data.get("rest_id"))
 
-            if not entries: break
+            if not entries or\
+                len(entries) == 2:
+                # If entries are empty or it just has cursor-bottom and cursor-top
+                break
 
             cursor = entries[-1].get("content", {}).get("value")
             if not cursor: break
