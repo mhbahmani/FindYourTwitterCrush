@@ -32,11 +32,17 @@ class DB:
         self.db.liked.insert_one(user)
 
     def get_handled_liked(self, username: str) -> list:
-        record = dict(list(self.db.liked.find({"username": username}, {"_id": 0, "result": 1, "total_likess": 1}))[0])
+        record = list(self.db.liked.find({"username": username}, {"_id": 0, "result": 1, "total_likess": 1}))
+        if not record:
+            return None, 0
+        record = dict(record[0])
         return record.get("result"), record.get("total_likess", 0)
 
     def get_handled_liking(self, username: str) -> list:
-        record = dict(list(self.db.liking.find({"username": username}, {"_id": 0, "result": 1, "likes_avg": 1}))[0])
+        record = list(self.db.liking.find({"username": username}, {"_id": 0, "result": 1, "likes_avg": 1}))
+        if not record:
+            return None, 0
+        record = dict(record[0])
         return record.get("result"), record.get("likes_avg", 0)
 
     def get_all_handled_liking(self) -> list:
