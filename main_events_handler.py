@@ -138,6 +138,9 @@ def handle_request(username: str, tweet_id, type: str = "t", queue: str = "liked
                 users, likes_count = db_client.get_handled_liked(username)
             elif queue == REQUEST_TYPE.LIKING.value:
                 users, likes_count = db_client.get_handled_liking(username)
+            # I store the exact thing that should be passed to the merge_images function.
+            # So the output of get_handled_liked and get_handled_liking is the users_data itself
+            users_data = users
         # If there was no record for this user on database
         if RENEW_CACHED_IMAGES_ON_CACHE_TYPE_REQUESTS or not users:
             try:
@@ -156,6 +159,7 @@ def handle_request(username: str, tweet_id, type: str = "t", queue: str = "liked
             except Exception as e:
                 logging.error(e)
                 return
+
             users_data = []
             for screen_name in users:
                 users_data.append(
