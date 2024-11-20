@@ -1,0 +1,10 @@
+{
+    "cookies": {
+        "auth_token": "",
+        "ct0": ""
+    },
+    "headers": {
+        "authorization": "",
+        "x-csrf-token": ""
+    }
+}
