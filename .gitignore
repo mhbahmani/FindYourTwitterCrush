@@ -8,6 +8,7 @@ test.py
 tmp/*
 tmp
 .vscode
+*.session
 
 ### Python ###
 # Byte-compiled / optimized / DLL files
